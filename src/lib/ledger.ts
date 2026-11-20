@@ -330,3 +330,32 @@ export function sampleState(now = new Date()): LedgerState {
   s = recordPayment(s, { customerId: ana.id, amount: 1000, now: at(2, 9) });
   return s;
 }
+
+export type ReceiptInfo = {
+  shop: string;
+  at: string;
+  customer: string | null;
+  lines: { name: string; qty: number; price: number }[];
+  total: number;
+  mode: "pronto" | "fiado";
+  given: number;
+  upfront: number;
+};
+
+/** Text of the sale receipt sent by WhatsApp. */
+export function receiptText(r: ReceiptInfo): string {
+  const out = [`*${r.shop}*`, `Comprovativo de venda — ${formatDate(r.at)}`];
+  if (r.customer) out.push(`Cliente: ${r.customer}`);
+  out.push("");
+  for (const l of r.lines) out.push(`${l.qty}× ${l.name} — ${formatKz(l.qty * l.price)}`);
+  out.push("", `*Total: ${formatKz(r.total)}*`);
+  if (r.mode === "pronto") {
+    if (r.given >= r.total && r.given > 0) out.push(`Entregue: ${formatKz(r.given)}`, `Troco: ${formatKz(r.given - r.total)}`);
+    else out.push("Pago a pronto");
+  } else {
+    if (r.upfront > 0) out.push(`Entrada paga: ${formatKz(r.upfront)}`);
+    out.push(`Fica a dever: ${formatKz(Math.max(0, r.total - r.upfront))}`);
+  }
+  out.push("", "Obrigado pela preferência!");
+  return out.join("\n");
+}

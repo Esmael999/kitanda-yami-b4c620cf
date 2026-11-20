@@ -11,9 +11,9 @@ import { useT } from "@/lib/i18n";
 export const Route = createFileRoute("/dividas")({
   head: () => ({
     meta: [
-      { title: "Dívidas — Kitanda" },
+      { title: "Dívidas — Kitanda Yami" },
       { name: "description", content: "Saiba quem deve, quanto e desde quando. Receba aos poucos." },
-      { property: "og:title", content: "Dívidas — Kitanda" },
+      { property: "og:title", content: "Dívidas — Kitanda Yami" },
       { property: "og:description", content: "Saiba quem deve, quanto e desde quando. Receba aos poucos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

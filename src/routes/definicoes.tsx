@@ -14,9 +14,9 @@ import { LanguagePicker } from "@/components/app/language-picker";
 export const Route = createFileRoute("/definicoes")({
   head: () => ({
     meta: [
-      { title: "Definições — Kitanda" },
+      { title: "Definições — Kitanda Yami" },
       { name: "description", content: "Dados do negócio e cópia de segurança." },
-      { property: "og:title", content: "Definições — Kitanda" },
+      { property: "og:title", content: "Definições — Kitanda Yami" },
       { property: "og:description", content: "Dados do negócio e cópia de segurança." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

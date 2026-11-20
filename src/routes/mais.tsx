@@ -7,9 +7,9 @@ import { useT } from "@/lib/i18n";
 export const Route = createFileRoute("/mais")({
   head: () => ({
     meta: [
-      { title: "Mais — Kitanda" },
+      { title: "Mais — Kitanda Yami" },
       { name: "description", content: "Clientes, relatórios e definições do seu negócio." },
-      { property: "og:title", content: "Mais — Kitanda" },
+      { property: "og:title", content: "Mais — Kitanda Yami" },
       { property: "og:description", content: "Clientes, relatórios e definições do seu negócio." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

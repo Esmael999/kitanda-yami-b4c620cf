@@ -85,3 +85,16 @@ describe("Kitanda rules", () => {
     expect(isLowStock({ ...p, stock: 4 })).toBe(false);
   });
 });
+
+import { receiptText } from "@/lib/ledger";
+describe("comprovativo", () => {
+  const base = { shop: "Kitanda Yami", at: "2026-11-20T10:00:00Z", customer: "Ana", lines: [{ name: "Fuba", qty: 2, price: 1000 }], total: 2000, given: 5000, upfront: 500 };
+  it("a pronto mostra troco", () => {
+    const t = receiptText({ ...base, mode: "pronto" });
+    expect(t).toContain("Kitanda Yami");
+    expect(t).toMatch(/Troco: 3[\s.]?000/);
+  });
+  it("fiado mostra o que fica a dever", () => {
+    expect(receiptText({ ...base, mode: "fiado" })).toMatch(/Fica a dever: 1[\s.]?500/);
+  });
+});

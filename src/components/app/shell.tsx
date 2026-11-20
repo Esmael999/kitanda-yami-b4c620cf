@@ -13,7 +13,7 @@ export function Logo({ className }: { className?: string }) {
         <BookOpen className="size-4" strokeWidth={2.5} />
       </span>
       <span>
-        Kitanda
+        Kitanda Yami
       </span>
     </span>
   );

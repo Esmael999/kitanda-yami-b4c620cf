@@ -25,9 +25,9 @@ export const Route = createFileRoute("/produtos")({
     s["filtro"] === "baixo" ? { filtro: "baixo" } : {},
   head: () => ({
     meta: [
-      { title: "Produtos e stock — Kitanda" },
+      { title: "Produtos e stock — Kitanda Yami" },
       { name: "description", content: "Preços, custos e stock com alerta de stock baixo." },
-      { property: "og:title", content: "Produtos e stock — Kitanda" },
+      { property: "og:title", content: "Produtos e stock — Kitanda Yami" },
       { property: "og:description", content: "Preços, custos e stock com alerta de stock baixo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

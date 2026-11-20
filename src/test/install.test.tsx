@@ -22,7 +22,7 @@ describe("Kitanda como app no telemóvel", () => {
   it("abre pelo ícone como app, sem barra do browser", () => {
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
-    expect(manifest.short_name).toBe("Kitanda");
+    expect(manifest.short_name).toBe("Kitanda Yami");
   });
 
   it("só promete ícones que existem e têm o tamanho que dizem", () => {

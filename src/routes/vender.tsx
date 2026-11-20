@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, Minus, Package, Plus, Search, UserPlus } from "lucide-react";
+import { Check, Copy, MessageCircle, Minus, Package, Plus, Search, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,18 +12,18 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { EmptyState, Field, MoneyInput, PageHeader } from "@/components/app/ui";
+import { EmptyState, Field, MoneyInput, PageHeader, whatsappLink } from "@/components/app/ui";
 import { updateLedger, useLedger } from "@/lib/store";
-import { cartTotal, formatKz, LedgerError, newId, recordSale } from "@/lib/ledger";
+import { cartTotal, formatKz, LedgerError, newId, receiptText, recordSale, type ReceiptInfo } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/vender")({
   head: () => ({
     meta: [
-      { title: "Nova venda — Kitanda" },
+      { title: "Nova venda — Kitanda Yami" },
       { name: "description", content: "Registe uma venda em segundos, a pronto ou fiado." },
-      { property: "og:title", content: "Nova venda — Kitanda" },
+      { property: "og:title", content: "Nova venda — Kitanda Yami" },
       { property: "og:description", content: "Registe uma venda em segundos, a pronto ou fiado." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -185,6 +185,7 @@ function CheckoutDrawer({
   const [addingCustomer, setAddingCustomer] = useState(false);
   const [given, setGiven] = useState(0);
   const [upfront, setUpfront] = useState(0);
+  const [receipt, setReceipt] = useState<{ info: ReceiptInfo; phone: string } | null>(null);
 
   const confirm = () => {
     try {
@@ -206,13 +207,51 @@ function CheckoutDrawer({
         });
       });
       toast.success(mode === "fiado" ? `Venda fiada de ${formatKz(total - upfront)} registada` : `Venda de ${formatKz(total)} registada`);
-      onDone();
+      const cust = cid ? state.customers.find((c) => c.id === cid) : null;
+      setReceipt({
+        phone: cust?.phone ?? "",
+        info: {
+          shop: state.settings.businessName || "Kitanda Yami",
+          at: new Date().toISOString(),
+          customer: cust?.name ?? (addingCustomer && newName.trim() ? newName.trim() : null),
+          lines: lines.map((l) => ({ name: l.name, qty: l.qty, price: l.price })),
+          total,
+          mode,
+          given: mode === "pronto" ? given : 0,
+          upfront: mode === "fiado" ? upfront : 0,
+        },
+      });
     } catch (e) {
       toast.error(e instanceof LedgerError ? e.message : "Não foi possível registar.");
     }
   };
 
   const changeDue = given - total;
+
+  if (receipt) {
+    const text = receiptText(receipt.info);
+    const wa = receipt.phone ? whatsappLink(receipt.phone, text) : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    return (
+      <Drawer open={open} onOpenChange={(o) => !o && onDone()}>
+        <DrawerContent className="mx-auto max-h-[92dvh] max-w-md">
+          <DrawerHeader className="text-left">
+            <DrawerTitle>Comprovativo</DrawerTitle>
+            <DrawerDescription>Envie ao cliente pelo WhatsApp.</DrawerDescription>
+          </DrawerHeader>
+          <pre className="mx-4 overflow-y-auto whitespace-pre-wrap rounded-2xl bg-secondary p-4 font-sans text-sm">{text}</pre>
+          <DrawerFooter>
+            <Button asChild variant="hero" size="xl">
+              <a href={wa} target="_blank" rel="noreferrer"><MessageCircle /> Enviar por WhatsApp</a>
+            </Button>
+            <Button variant="outline" onClick={() => navigator.clipboard?.writeText(text).then(() => toast.success("Texto copiado"))}>
+              <Copy /> Copiar texto
+            </Button>
+            <Button variant="ghost" onClick={onDone}>Nova venda</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>

@@ -13,12 +13,12 @@ import { LanguagePicker } from "@/components/app/language-picker";
 export const Route = createFileRoute("/entrar")({
   head: () => ({
     meta: [
-      { title: "Entrar — Kitanda" },
+      { title: "Entrar — Kitanda Yami" },
       {
         name: "description",
         content: "Crie a sua conta e comece a registar vendas, stock e dívidas no telemóvel.",
       },
-      { property: "og:title", content: "Entrar — Kitanda" },
+      { property: "og:title", content: "Entrar — Kitanda Yami" },
       {
         property: "og:description",
         content: "Crie a sua conta e comece a registar vendas, stock e dívidas no telemóvel.",

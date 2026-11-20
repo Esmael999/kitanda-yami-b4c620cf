@@ -21,9 +21,9 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Início — Kitanda" },
+      { title: "Início — Kitanda Yami" },
       { name: "description", content: "Vendas de hoje, dinheiro recebido e dívidas num só olhar." },
-      { property: "og:title", content: "Início — Kitanda" },
+      { property: "og:title", content: "Início — Kitanda Yami" },
       { property: "og:description", content: "Vendas de hoje, dinheiro recebido e dívidas num só olhar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
