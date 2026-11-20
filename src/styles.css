@@ -123,6 +123,10 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* no pull-to-refresh: inside the installed app it reads as a broken screen */
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -130,6 +134,30 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* tap targets react at once — no double-tap-to-zoom wait */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+
+  /* the bottom bar and the big buttons are pressed, not copied */
+  nav,
+  button {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* a phone screen never scrolls sideways */
+  body {
+    overflow-x: hidden;
   }
 
   h1,
@@ -173,6 +201,10 @@
 
 @utility pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 1.5rem);
 }
 
 @keyframes pop-in {

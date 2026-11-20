@@ -115,7 +115,7 @@ function SignIn() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col justify-center gap-5 px-5 py-8">
+    <div className="flex min-h-dvh flex-col justify-center gap-5 px-5 pt-safe pb-8">
       <div className="flex justify-center">
         <Logo className="text-2xl" />
       </div>

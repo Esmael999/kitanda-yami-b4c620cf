@@ -1,16 +1,54 @@
 {
+  "id": "/",
   "name": "Kitanda — Caderno de vendas",
   "short_name": "Kitanda",
   "description": "Vendas, stock e dívidas em Kwanzas, no seu telemóvel.",
   "lang": "pt-AO",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b2117",
   "theme_color": "#0b2117",
+  "categories": ["business", "finance", "shopping"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova venda",
+      "short_name": "Vender",
+      "description": "Abrir a venda seguinte",
+      "url": "/vender",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Dívidas",
+      "short_name": "Dívidas",
+      "description": "Ver quem lhe deve",
+      "url": "/dividas",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Produtos",
+      "short_name": "Produtos",
+      "description": "Ver o stock",
+      "url": "/produtos",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

@@ -7,5 +7,6 @@
 - [x] Acrescentar a fotografia da comerciante (do Caderno Digital) à Kitanda
 - [x] Ecrã de entrar/criar conta + iniciar sessão (a app está presa no logótipo sem isto)
 - [x] Restaurar o trigger de registo no novo backend (conta nova sem loja própria)
+- [ ] App móvel: ícone no ecrã inicial + telas a caber no telemóvel
 - [ ] Produtos de teste
 - [ ] Convidar ajudante e escolher o que cada um pode fazer

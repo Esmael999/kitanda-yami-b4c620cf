@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, ChevronRight, Settings, Smartphone, Users } from "lucide-react";
+import { BarChart3, ChevronRight, Settings, Users } from "lucide-react";
 import { Card, PageHeader } from "@/components/app/ui";
+import { InstallCard } from "@/components/app/install-card";
 
 export const Route = createFileRoute("/mais")({
   head: () => ({
@@ -42,19 +43,7 @@ function More() {
           </Link>
         ))}
 
-        <Card className="mt-4 bg-success-soft">
-          <div className="flex items-center gap-2 font-semibold">
-            <Smartphone className="size-4 text-primary" /> Pôr a Kitanda no ecrã do telemóvel
-          </div>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            <li>
-              <strong className="text-foreground">Android (Chrome):</strong> menu ⋮ → “Adicionar ao ecrã inicial”.
-            </li>
-            <li>
-              <strong className="text-foreground">iPhone (Safari):</strong> botão Partilhar → “Adicionar ao ecrã principal”.
-            </li>
-          </ul>
-        </Card>
+        <InstallCard />
       </div>
     </div>
   );

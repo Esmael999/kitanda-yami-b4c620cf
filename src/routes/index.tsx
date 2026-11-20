@@ -52,7 +52,7 @@ function Home() {
     updateLedger((s) => ({ ...emptyState(), settings: { ...s.settings, businessName: "A minha cantina", ownerName: "" } }));
 
   return (
-    <div className="space-y-5 px-5 pt-6">
+    <div className="space-y-5 px-5 pt-safe">
       <div className="flex items-center justify-between">
         <Logo className="text-lg" />
         <Link to="/definicoes" className="max-w-[55%] truncate text-sm text-muted-foreground">
