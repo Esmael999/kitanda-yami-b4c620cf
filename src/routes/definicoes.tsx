@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Download, Trash2, Upload } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Download, LogOut, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field, PageHeader } from "@/components/app/ui";
+import { signOut, useAuth } from "@/lib/auth";
 import { updateLedger, useLedger } from "@/lib/store";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 
@@ -27,6 +28,14 @@ function SettingsPage() {
   const [business, setBusiness] = useState(state.settings.businessName);
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  const leave = async () => {
+    if (!window.confirm("Sair da conta neste telemóvel?")) return;
+    await signOut();
+    await navigate({ to: "/entrar" });
+  };
 
   const save = () => {
     updateLedger((s) => ({
@@ -86,9 +95,22 @@ function SettingsPage() {
 
         <Card className="space-y-3">
           <div>
+            <p className="font-semibold">A sua conta</p>
+            <p className="text-sm text-muted-foreground">
+              {auth.email || "Sem email ligado."} As vendas que registar ficam guardadas na sua conta e
+              aparecem em qualquer telemóvel onde entrar.
+            </p>
+          </div>
+          <Button variant="soft" className="w-full" onClick={leave}>
+            <LogOut /> Sair da conta
+          </Button>
+        </Card>
+
+        <Card className="space-y-3">
+          <div>
             <p className="font-semibold">Cópia de segurança</p>
             <p className="text-sm text-muted-foreground">
-              Os dados ficam só neste telemóvel, sem login. Guarde uma cópia de vez em quando para
+              Além do que fica na sua conta, guarde uma cópia neste telemóvel de vez em quando, para
               não perder nada se trocar de telemóvel.
             </p>
           </div>

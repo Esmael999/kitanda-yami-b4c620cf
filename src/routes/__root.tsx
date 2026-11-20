@@ -84,12 +84,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Kitanda — O caderno de vendas no seu telemóvel" },
       {
         name: "description",
-        content: "Registe vendas, controle o stock e saiba quem lhe deve, em Kwanzas. Sem login.",
+        content: "Registe vendas, controle o stock e saiba quem lhe deve, em Kwanzas. Com conta só sua.",
       },
       { property: "og:title", content: "Kitanda — O caderno de vendas no seu telemóvel" },
       {
         property: "og:description",
-        content: "Registe vendas, controle o stock e saiba quem lhe deve, em Kwanzas. Sem login.",
+        content: "Registe vendas, controle o stock e saiba quem lhe deve, em Kwanzas. Com conta só sua.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

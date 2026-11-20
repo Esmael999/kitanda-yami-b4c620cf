@@ -1,6 +1,8 @@
-import { Link, Outlet } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { BookOpen, HandCoins, Home, LayoutGrid, Package, Plus } from "lucide-react";
-import { useLedgerReady } from "@/lib/store";
+import { isAuthPage, useAuth } from "@/lib/auth";
+import { endSession, startSession, useLedgerReady } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export function Logo({ className }: { className?: string }) {
@@ -63,19 +65,48 @@ function BottomNav() {
   );
 }
 
+function Splash() {
+  return (
+    <div className="grid min-h-dvh place-items-center">
+      <Logo className="animate-pulse text-xl" />
+    </div>
+  );
+}
+
 export function AppShell() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const auth = useAuth();
   const ready = useLedgerReady();
+
+  // The account owns the offline copy: load it in when someone signs in, drop it when they leave.
+  useEffect(() => {
+    if (auth.userId) void startSession(auth.userId, auth.email);
+    else if (auth.status === "signed_out") endSession();
+  }, [auth.userId, auth.email, auth.status]);
+
+  if (isAuthPage(pathname)) {
+    return (
+      <div className="min-h-dvh bg-app-glow">
+        <div className="mx-auto min-h-dvh max-w-md">
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
+  if (auth.status === "checking") {
+    return (
+      <div className="min-h-dvh bg-app-glow">
+        <Splash />
+      </div>
+    );
+  }
+
+  if (auth.status !== "signed_in") return <Navigate to="/entrar" replace />;
+
   return (
     <div className="min-h-dvh bg-app-glow">
-      <div className="mx-auto min-h-dvh max-w-md pb-28">
-        {ready ? (
-          <Outlet />
-        ) : (
-          <div className="grid min-h-dvh place-items-center">
-            <Logo className="animate-pulse text-xl" />
-          </div>
-        )}
-      </div>
+      <div className="mx-auto min-h-dvh max-w-md pb-28">{ready ? <Outlet /> : <Splash />}</div>
       <BottomNav />
     </div>
   );

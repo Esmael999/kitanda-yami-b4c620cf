@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as DefinicoesRouteImport } from './routes/definicoes'
 import { Route as DividasRouteImport } from './routes/dividas'
+import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as MaisRouteImport } from './routes/mais'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
@@ -36,6 +37,11 @@ const DefinicoesRoute = DefinicoesRouteImport.update({
 const DividasRoute = DividasRouteImport.update({
   id: '/dividas',
   path: '/dividas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MaisRoute = MaisRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof ClientesRoute
   '/definicoes': typeof DefinicoesRoute
   '/dividas': typeof DividasRoute
+  '/entrar': typeof EntrarRoute
   '/mais': typeof MaisRoute
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof ClientesRoute
   '/definicoes': typeof DefinicoesRoute
   '/dividas': typeof DividasRoute
+  '/entrar': typeof EntrarRoute
   '/mais': typeof MaisRoute
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRoute
   '/definicoes': typeof DefinicoesRoute
   '/dividas': typeof DividasRoute
+  '/entrar': typeof EntrarRoute
   '/mais': typeof MaisRoute
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/definicoes'
     | '/dividas'
+    | '/entrar'
     | '/mais'
     | '/produtos'
     | '/relatorios'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/definicoes'
     | '/dividas'
+    | '/entrar'
     | '/mais'
     | '/produtos'
     | '/relatorios'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/definicoes'
     | '/dividas'
+    | '/entrar'
     | '/mais'
     | '/produtos'
     | '/relatorios'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRoute
   DefinicoesRoute: typeof DefinicoesRoute
   DividasRoute: typeof DividasRoute
+  EntrarRoute: typeof EntrarRoute
   MaisRoute: typeof MaisRoute
   ProdutosRoute: typeof ProdutosRoute
   RelatoriosRoute: typeof RelatoriosRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/dividas'
       fullPath: '/dividas'
       preLoaderRoute: typeof DividasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mais': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRoute,
   DefinicoesRoute: DefinicoesRoute,
   DividasRoute: DividasRoute,
+  EntrarRoute: EntrarRoute,
   MaisRoute: MaisRoute,
   ProdutosRoute: ProdutosRoute,
   RelatoriosRoute: RelatoriosRoute,

@@ -32,6 +32,9 @@ use the editor.
 ## Project rules
 
 - Business rules (sales, stock, debts, reports, Kz formatting) live as pure functions in `src/lib/ledger.ts` and are covered by `src/test/ledger.test.ts` — keeps money logic testable and out of UI.
-- App data is device-only via `src/lib/store.ts` (localStorage + useSyncExternalStore); no backend or auth — the app is intentionally login-free.
+- App data is offline-first via `src/lib/store.ts` (IndexedDB + useSyncExternalStore) and synced to Lovable Cloud through queued idempotent RPCs; local writes never wait on the network.
+- A Supabase session is required: `src/lib/auth.ts` owns it and `AppShell` redirects signed-out visitors to `/entrar` — so no screen can be reached without an account.
+- A new account always gets its own store through the `on_auth_user_created` trigger on `auth.users` calling `public.handle_new_user()`; without it a fresh account has no establishment and the app cannot load.
+- Roles live in `public.employees` (`owner`/`employee` + a jsonb permission set); never derive privileges from user-editable profile metadata.
 - Pages render only after `useLedgerReady()` in `AppShell` — device storage is unavailable during SSR, so this avoids hydration mismatches.
 - Installability is manifest-only (`public/manifest.webmanifest`), no service worker — avoids stale caches in preview.
