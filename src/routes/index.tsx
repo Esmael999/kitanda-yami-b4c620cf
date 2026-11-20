@@ -5,6 +5,7 @@ import { Card, Eyebrow } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import comerciante from "@/assets/comerciante.png.asset.json";
 import { useLedger, updateLedger } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import {
   addDays,
   debtors,
@@ -33,11 +34,12 @@ export const Route = createFileRoute("/")({
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 12 ? "Bom dia" : h < 19 ? "Boa tarde" : "Boa noite";
+  return h < 12 ? "greet.morning" : h < 19 ? "greet.afternoon" : "greet.evening";
 }
 
 function Home() {
   const state = useLedger();
+  const t = useT();
   const today = startOfDay(new Date());
   const stats = periodStats(state, today, addDays(today, 1));
   const yesterday = periodStats(state, addDays(today, -1), today);
@@ -78,7 +80,7 @@ function Home() {
 
       <div>
         <h1 className="text-3xl leading-tight font-extrabold">
-          {greeting()}
+          {t(greeting())}
           {state.settings.ownerName ? `, ${state.settings.ownerName}` : ""}.
         </h1>
         <p className="text-muted-foreground">Veja como vai o negócio hoje.</p>
@@ -97,7 +99,7 @@ function Home() {
       )}
 
       <section className="relative overflow-hidden rounded-3xl bg-gradient-hero p-5 shadow-glow animate-pop">
-        <Eyebrow className="text-foreground/80">Vendas de hoje</Eyebrow>
+        <Eyebrow className="text-foreground/80">{t("home.todaySales")}</Eyebrow>
         <p className="mt-1 text-4xl font-extrabold tabular">{formatKz(stats.total)}</p>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-foreground/85">
           <TrendingUp className="size-4" />
@@ -111,11 +113,11 @@ function Home() {
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-background/25 p-3">
-            <p className="text-xs text-foreground/80">Recebido hoje</p>
+            <p className="text-xs text-foreground/80">{t("home.receivedToday")}</p>
             <p className="font-bold tabular">{formatKz(stats.received)}</p>
           </div>
           <div className="rounded-2xl bg-background/25 p-3">
-            <p className="text-xs text-foreground/80">Lucro hoje</p>
+            <p className="text-xs text-foreground/80">{t("home.profitToday")}</p>
             <p className="font-bold tabular">{formatKz(stats.profit)}</p>
           </div>
         </div>
@@ -124,12 +126,12 @@ function Home() {
       <div className="grid grid-cols-2 gap-3">
         <Button asChild variant="hero" size="xl">
           <Link to="/vender">
-            <Plus /> Nova venda
+            <Plus /> {t("action.newSale")}
           </Link>
         </Button>
         <Button asChild variant="soft" size="xl">
           <Link to="/dividas">
-            <HandCoins /> Receber
+            <HandCoins /> {t("action.receive")}
           </Link>
         </Button>
       </div>
@@ -171,7 +173,7 @@ function Home() {
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Últimas vendas</h2>
+          <h2 className="text-lg font-bold">{t("home.lastSales")}</h2>
           <Link to="/relatorios" className="text-sm text-primary">
             Relatórios
           </Link>

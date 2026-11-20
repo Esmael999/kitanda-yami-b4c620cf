@@ -4,6 +4,7 @@ import { Card, Eyebrow, PageHeader } from "@/components/app/ui";
 import { useLedger } from "@/lib/store";
 import { addDays, formatKz, periodStats, salesByDay, startOfDay, topProducts } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -29,6 +30,7 @@ const weekday = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function Reports() {
   const state = useLedger();
+  const t = useT();
   const [days, setDays] = useState<number>(7);
   const to = addDays(startOfDay(new Date()), 1);
   const from = addDays(to, -days);
@@ -40,7 +42,7 @@ function Reports() {
 
   return (
     <div>
-      <PageHeader title="Relatórios" back="/mais" />
+      <PageHeader title={t("page.reports")} back="/mais" />
       <div className="space-y-4 px-5">
         <div className="grid grid-cols-3 gap-1 rounded-2xl bg-secondary p-1">
           {periods.map((p) => (

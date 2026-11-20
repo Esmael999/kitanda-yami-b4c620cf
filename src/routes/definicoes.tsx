@@ -8,6 +8,8 @@ import { Card, Field, PageHeader } from "@/components/app/ui";
 import { signOut, useAuth } from "@/lib/auth";
 import { updateLedger, useLedger } from "@/lib/store";
 import { emptyState, type LedgerState } from "@/lib/ledger";
+import { useT } from "@/lib/i18n";
+import { LanguagePicker } from "@/components/app/language-picker";
 
 export const Route = createFileRoute("/definicoes")({
   head: () => ({
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/definicoes")({
 
 function SettingsPage() {
   const state = useLedger();
+  const t = useT();
   const [business, setBusiness] = useState(state.settings.businessName);
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -80,8 +83,12 @@ function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Definições" back="/mais" />
+      <PageHeader title={t("page.settings")} back="/mais" />
       <div className="space-y-4 px-5">
+        <Card>
+          <LanguagePicker />
+        </Card>
+
         <Card className="space-y-3">
           <Field label="Nome do negócio" htmlFor="s-business">
             <Input id="s-business" value={business} onChange={(e) => setBusiness(e.target.value)} className="h-12 rounded-xl text-base" />
@@ -90,7 +97,7 @@ function SettingsPage() {
             <Input id="s-owner" value={owner} onChange={(e) => setOwner(e.target.value)} className="h-12 rounded-xl text-base" />
           </Field>
           <Button variant="hero" size="xl" className="w-full" onClick={save}>
-            Guardar
+            {t("action.save")}
           </Button>
         </Card>
 

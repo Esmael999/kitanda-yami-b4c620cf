@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, ChevronRight, Settings, Users } from "lucide-react";
 import { Card, PageHeader } from "@/components/app/ui";
 import { InstallCard } from "@/components/app/install-card";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/mais")({
   head: () => ({
@@ -18,15 +19,16 @@ export const Route = createFileRoute("/mais")({
 });
 
 const items = [
-  { to: "/clientes", label: "Clientes", text: "Contactos e histórico de compras", icon: Users },
-  { to: "/relatorios", label: "Relatórios", text: "Lucro, mais vendidos e vendas por dia", icon: BarChart3 },
-  { to: "/definicoes", label: "Definições", text: "Nome do negócio, cópia de segurança", icon: Settings },
+  { to: "/clientes", label: "page.customers", text: "Contactos e histórico de compras", icon: Users },
+  { to: "/relatorios", label: "page.reports", text: "Lucro, mais vendidos e vendas por dia", icon: BarChart3 },
+  { to: "/definicoes", label: "page.settings", text: "Nome do negócio, cópia de segurança", icon: Settings },
 ] as const;
 
 function More() {
+  const t = useT();
   return (
     <div>
-      <PageHeader title="Mais" />
+      <PageHeader title={t("nav.more")} />
       <div className="space-y-2 px-5">
         {items.map(({ to, label, text, icon: Icon }) => (
           <Link key={to} to={to} className="block">
@@ -35,7 +37,7 @@ function More() {
                 <Icon className="size-5" />
               </span>
               <div className="flex-1">
-                <p className="font-semibold">{label}</p>
+                <p className="font-semibold">{t(label)}</p>
                 <p className="text-sm text-muted-foreground">{text}</p>
               </div>
               <ChevronRight className="size-5 text-muted-foreground" />

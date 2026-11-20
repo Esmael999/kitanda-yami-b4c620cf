@@ -16,6 +16,7 @@ import { EmptyState, Field, MoneyInput, PageHeader } from "@/components/app/ui";
 import { updateLedger, useLedger } from "@/lib/store";
 import { cartTotal, formatKz, LedgerError, newId, recordSale } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/vender")({
   head: () => ({
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/vender")({
 
 function Sell() {
   const state = useLedger();
+  const t = useT();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -60,7 +62,7 @@ function Sell() {
 
   return (
     <div>
-      <PageHeader title="Nova venda" subtitle="Toque nos produtos para adicionar." />
+      <PageHeader title={t("action.newSale")} subtitle="Toque nos produtos para adicionar." />
       <div className="px-5">
         <div className="relative">
           <Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />

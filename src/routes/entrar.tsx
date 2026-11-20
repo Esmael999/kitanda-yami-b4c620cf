@@ -7,6 +7,8 @@ import { Card, Eyebrow, Field } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import { authMessage, signIn, signInWithGoogle, signUp, useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
+import { LanguagePicker } from "@/components/app/language-picker";
 
 export const Route = createFileRoute("/entrar")({
   head: () => ({
@@ -51,6 +53,7 @@ const GoogleMark = () => (
 
 function SignIn() {
   const auth = useAuth();
+  const t = useT();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"in" | "up">("up");
   const [email, setEmail] = useState("");
@@ -159,7 +162,7 @@ function SignIn() {
                   mode === m ? "bg-surface text-foreground shadow-card" : "text-muted-foreground",
                 )}
               >
-                {m === "up" ? "Criar conta" : "Entrar"}
+                {m === "up" ? t("auth.signUp") : t("auth.signIn")}
               </button>
             ))}
           </div>
@@ -251,6 +254,8 @@ function SignIn() {
           </p>
         </>
       )}
+
+      <LanguagePicker className="pt-2" />
     </div>
   );
 }

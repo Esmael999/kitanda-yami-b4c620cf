@@ -7,6 +7,7 @@ import { Avatar, Card, EmptyState, PageHeader } from "@/components/app/ui";
 import { CustomerDrawer } from "@/components/app/customer-drawer";
 import { useLedger } from "@/lib/store";
 import { customerDebt, formatKz } from "@/lib/ledger";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/clientes")({
 
 function Customers() {
   const state = useLedger();
+  const t = useT();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const list = state.customers
@@ -33,7 +35,7 @@ function Customers() {
   return (
     <div>
       <PageHeader
-        title="Clientes"
+        title={t("page.customers")}
         subtitle={`${state.customers.length} clientes`}
         back="/mais"
         action={

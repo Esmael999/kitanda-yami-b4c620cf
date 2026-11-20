@@ -6,6 +6,7 @@ import { CustomerDrawer } from "@/components/app/customer-drawer";
 import { useLedger } from "@/lib/store";
 import { daysSince, debtors, formatDate, formatKz } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/dividas")({
   head: () => ({
@@ -23,13 +24,14 @@ export const Route = createFileRoute("/dividas")({
 
 function Debts() {
   const state = useLedger();
+  const t = useT();
   const list = debtors(state);
   const total = list.reduce((s, d) => s + d.debt, 0);
   const [open, setOpen] = useState<string | null>(null);
 
   return (
     <div>
-      <PageHeader title="Dívidas" subtitle="Quem lhe deve e desde quando." />
+      <PageHeader title={t("nav.debts")} subtitle="Quem lhe deve e desde quando." />
       <div className="space-y-4 px-5">
         <Card className="border-debt/40 bg-debt-soft">
           <Eyebrow className="text-debt">Total a receber</Eyebrow>

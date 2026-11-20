@@ -8,7 +8,8 @@
 - [x] Ecrã de entrar/criar conta + iniciar sessão (a app está presa no logótipo sem isto)
 - [x] Restaurar o trigger de registo no novo backend (conta nova sem loja própria)
 - [x] App móvel: ícone no ecrã inicial + telas a caber no telemóvel
-- [ ] App funciona sem internet (abre e regista vendas offline)
-- [ ] Escolher a língua: português, kimbundu, kikongo, cokwe
+- [x] App funciona sem internet (abre e regista vendas offline)
+- [x] Escolher a língua: português, kimbundu, kikongo, cokwe (primeira versão: só palavras principais)
+- [ ] Rever e completar as traduções com quem fala kimbundu, kikongo e cokwe
 - [ ] Produtos de teste
 - [ ] Convidar ajudante e escolher o que cada um pode fazer

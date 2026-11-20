@@ -16,6 +16,7 @@ import { Card, EmptyState, Field, MoneyInput, NumberInput, PageHeader } from "@/
 import { updateLedger, useLedger } from "@/lib/store";
 import { formatKz, isLowStock, LedgerError, newId, validateProduct, type Product } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type Search = { filtro?: "baixo" };
 
@@ -39,6 +40,7 @@ const blank: Omit<Product, "id"> = { name: "", price: 0, cost: 0, stock: 0, minS
 
 function Products() {
   const state = useLedger();
+  const t = useT();
   const { filtro } = Route.useSearch();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
@@ -54,7 +56,7 @@ function Products() {
   return (
     <div>
       <PageHeader
-        title="Produtos"
+        title={t("nav.products")}
         subtitle={`${state.products.length} produtos · stock vale ${formatKz(stockValue)}`}
         action={
           <Button variant="hero" size="icon-lg" aria-label="Novo produto" onClick={() => setCreating(true)}>
