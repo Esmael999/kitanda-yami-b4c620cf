@@ -1,0 +1,191 @@
+/*
+ * Tailwind v4 entry: config lives here, with no tailwind.config.js or PostCSS plugin.
+ * Keep every @import in this top block. Web fonts load via <link> in src/routes/__root.tsx.
+ */
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Kitanda design system — the Caderno Digital look: deep dark green, bright green
+ * accents, amber for money owed. All colors in oklch.
+ */
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-debt: var(--debt);
+  --color-debt-foreground: var(--debt-foreground);
+  --color-debt-soft: var(--debt-soft);
+  --color-success-soft: var(--success-soft);
+  --color-surface: var(--surface);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 1rem;
+  --background: oklch(0.17 0.03 160);
+  --foreground: oklch(0.96 0.012 150);
+  --surface: oklch(0.2 0.032 159);
+  --card: oklch(0.22 0.035 158);
+  --card-foreground: oklch(0.96 0.012 150);
+  --popover: oklch(0.21 0.034 158);
+  --popover-foreground: oklch(0.96 0.012 150);
+  --primary: oklch(0.8 0.19 148);
+  --primary-foreground: oklch(0.18 0.045 160);
+  --secondary: oklch(0.27 0.04 158);
+  --secondary-foreground: oklch(0.94 0.015 150);
+  --muted: oklch(0.25 0.032 158);
+  --muted-foreground: oklch(0.72 0.03 155);
+  --accent: oklch(0.3 0.06 155);
+  --accent-foreground: oklch(0.9 0.12 148);
+  --destructive: oklch(0.66 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 150);
+  --border: oklch(0.31 0.04 158);
+  --input: oklch(0.33 0.04 158);
+  --ring: oklch(0.8 0.19 148);
+  --debt: oklch(0.8 0.15 75);
+  --debt-foreground: oklch(0.2 0.05 70);
+  --debt-soft: oklch(0.8 0.15 75 / 14%);
+  --success-soft: oklch(0.8 0.19 148 / 14%);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.72 0.18 152), oklch(0.86 0.19 135));
+  --gradient-hero: linear-gradient(150deg, oklch(0.6 0.16 152), oklch(0.42 0.12 156));
+  --gradient-glow: radial-gradient(
+    120% 60% at 50% -10%,
+    oklch(0.45 0.13 152 / 55%),
+    transparent 70%
+  );
+  --shadow-glow: 0 18px 40px -18px oklch(0.75 0.19 148 / 55%);
+  --shadow-card: 0 10px 30px -18px oklch(0 0 0 / 70%);
+
+  --chart-1: oklch(0.8 0.19 148);
+  --chart-2: oklch(0.8 0.15 75);
+  --chart-3: oklch(0.65 0.12 190);
+  --chart-4: oklch(0.7 0.15 120);
+  --chart-5: oklch(0.6 0.1 160);
+  --sidebar: oklch(0.2 0.032 159);
+  --sidebar-foreground: oklch(0.96 0.012 150);
+  --sidebar-primary: oklch(0.8 0.19 148);
+  --sidebar-primary-foreground: oklch(0.18 0.045 160);
+  --sidebar-accent: oklch(0.27 0.04 158);
+  --sidebar-accent-foreground: oklch(0.96 0.012 150);
+  --sidebar-border: oklch(0.31 0.04 158);
+  --sidebar-ring: oklch(0.8 0.19 148);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility bg-gradient-primary {
+  background-image: var(--gradient-primary);
+}
+
+@utility bg-gradient-hero {
+  background-image: var(--gradient-hero);
+}
+
+@utility bg-app-glow {
+  background-image: var(--gradient-glow);
+  background-repeat: no-repeat;
+}
+
+@utility shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+@utility text-gradient-primary {
+  background-image: var(--gradient-primary);
+  background-clip: text;
+  color: transparent;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-pop {
+  animation: pop-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
