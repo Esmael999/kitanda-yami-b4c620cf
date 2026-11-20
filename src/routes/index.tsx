@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowRight, HandCoins, Plus, ShoppingBag, TrendingUp, X 
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
-import comerciante from "@/assets/comerciante.png.asset.json";
+import comerciante from "@/assets/comerciante.png";
 import { useLedger, updateLedger } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import {
@@ -64,7 +64,7 @@ function Home() {
 
       <section className="relative overflow-hidden rounded-3xl border shadow-card animate-pop">
         <img
-          src={comerciante.url}
+          src={comerciante}
           alt="Comerciante angolana na sua cantina"
           className="h-72 w-full object-cover object-[50%_8%]"
         />

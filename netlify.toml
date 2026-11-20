@@ -1,0 +1,8 @@
+# Hosting on Netlify: Netlify runs the build and serves the result. The app's backend stays on
+# Lovable Cloud, so accounts and data are the same as on the Lovable address.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
