@@ -37,4 +37,4 @@ use the editor.
 - A new account always gets its own store through the `on_auth_user_created` trigger on `auth.users` calling `public.handle_new_user()`; without it a fresh account has no establishment and the app cannot load.
 - Roles live in `public.employees` (`owner`/`employee` + a jsonb permission set); never derive privileges from user-editable profile metadata.
 - Pages render only after `useLedgerReady()` in `AppShell` — device storage is unavailable during SSR, so this avoids hydration mismatches.
-- Installability is manifest-only (`public/manifest.webmanifest`), no service worker — avoids stale caches in preview.
+- Installability is manifest-only (`public/manifest.webmanifest`), no service worker — avoids stale caches in preview. The install offer lives in `src/components/app/install-card.tsx` with the phone-detection helpers in `src/lib/install.ts` (covered by `src/test/install.test.tsx`), and icons ship as both `any` and `maskable` so any launcher crop keeps the glyph readable.
