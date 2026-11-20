@@ -49,7 +49,7 @@ function Home() {
   const diff = stats.total - yesterday.total;
 
   const clearSample = () =>
-    updateLedger((s) => ({ ...emptyState(), settings: { ...s.settings, businessName: "A minha cantina", ownerName: "" } }));
+    updateLedger((s) => ({ ...emptyState(), settings: { ...s.settings, businessName: "A minha cantina", ownerName: "" } }), []);
 
   return (
     <div className="space-y-5 px-5 pt-safe">

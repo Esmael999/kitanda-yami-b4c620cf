@@ -53,6 +53,62 @@ export function productSaveOps(
   return ops;
 }
 
+/**
+ * Everything that must reach the server for a local change, worked out by comparing the ledger
+ * before and after it. Sales take their own stock off on the server, so only stock changes that a
+ * sale does not explain travel as a stock movement. Sample data never leaves the phone.
+ */
+export function ledgerOps(before: LedgerState, after: LedgerState, newId: () => string, now: string): SyncOp[] {
+  if (before.isSample || after.isSample) return [];
+  const ops: SyncOp[] = [];
+
+  if (
+    before.settings.businessName !== after.settings.businessName ||
+    before.settings.ownerName !== after.settings.ownerName
+  ) {
+    ops.push({ id: newId(), kind: "settings", businessName: after.settings.businessName, ownerName: after.settings.ownerName });
+  }
+
+  const oldCustomers = new Map(before.customers.map((c) => [c.id, c]));
+  for (const c of after.customers) {
+    const old = oldCustomers.get(c.id);
+    if (!old || old.name !== c.name || old.phone !== c.phone) ops.push({ id: newId(), kind: "customer", customer: c, changedAt: now });
+  }
+
+  const oldSaleIds = new Set(before.sales.map((s) => s.id));
+  const newSales = after.sales.filter((s) => !oldSaleIds.has(s.id));
+  const soldNow = new Map<string, number>();
+  for (const sale of newSales) for (const i of sale.items) soldNow.set(i.productId, (soldNow.get(i.productId) ?? 0) + i.qty);
+
+  const oldProducts = new Map(before.products.map((p) => [p.id, p]));
+  const stockOps: SyncOp[] = [];
+  for (const p of after.products) {
+    const old = oldProducts.get(p.id);
+    const { stock, ...details } = p;
+    if (!old || old.name !== p.name || old.price !== p.price || old.cost !== p.cost || old.minStock !== p.minStock) {
+      ops.push({ id: newId(), kind: "product", product: details, changedAt: now });
+    }
+    const delta = stock - (old?.stock ?? 0) + (soldNow.get(p.id) ?? 0);
+    if (delta !== 0) {
+      const reason = !old ? "inicial" : delta > 0 ? "reposicao" : "ajuste";
+      stockOps.push({ id: newId(), kind: "stock", productId: p.id, delta, reason });
+    }
+  }
+  ops.push(...stockOps);
+
+  for (const sale of [...newSales].reverse()) ops.push({ id: newId(), kind: "sale", sale });
+
+  const oldPaymentIds = new Set(before.payments.map((p) => p.id));
+  for (const payment of after.payments) if (!oldPaymentIds.has(payment.id)) ops.push({ id: newId(), kind: "payment", payment });
+
+  const customerIds = new Set(after.customers.map((c) => c.id));
+  for (const c of before.customers) if (!customerIds.has(c.id)) ops.push({ id: newId(), kind: "customer_delete", customerId: c.id });
+  const productIds = new Set(after.products.map((p) => p.id));
+  for (const p of before.products) if (!productIds.has(p.id)) ops.push({ id: newId(), kind: "product_delete", productId: p.id });
+
+  return ops;
+}
+
 /** Network/auth hiccups are retried; database refusals (permission, validation) are not. */
 export function isPermanentError(error: { code?: string | null; message?: string } | null): boolean {
   if (!error) return false;

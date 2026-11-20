@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { emptyState, newId, type LedgerState } from "./ledger";
-import { isPermanentError, rowsToState, type Member, type ServerRows, type SyncOp } from "./cloud-map";
+import { isPermanentError, ledgerOps, rowsToState, type Member, type ServerRows, type SyncOp } from "./cloud-map";
 import { idbGet, idbSet } from "./offline-db";
 
 /*
@@ -68,7 +68,8 @@ export function useCloud(): Cloud {
 
 /**
  * Apply a change locally and queue what must reach the server.
- * `ops` may be a list or a function of (before, after) for changes whose ids are created inside `fn`.
+ * `ops` may be a list or a function of (before, after); left out, the change is compared with the
+ * previous ledger so every screen's edits reach the server without each one listing them.
  */
 export function updateLedger(
   fn: (s: LedgerState) => LedgerState,
@@ -77,7 +78,10 @@ export function updateLedger(
   const before = ledger;
   ledger = fn(before);
   localVersion++;
-  const list = typeof ops === "function" ? ops(before, ledger) : (ops ?? []);
+  const list =
+    typeof ops === "function"
+      ? ops(before, ledger)
+      : (ops ?? ledgerOps(before, ledger, newId, new Date().toISOString()));
   queue = [...queue, ...list];
   setCloud({});
   saveLocal();

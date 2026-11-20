@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, Smartphone } from "lucide-react";
+import { CheckCircle2, Download, Smartphone, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/app/ui";
 import {
@@ -80,6 +80,10 @@ export function InstallCard() {
           </ol>
         </>
       )}
+      <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+        <WifiOff className="mt-0.5 size-4 shrink-0 text-primary" />
+        Funciona sem internet: abra uma vez com rede e depois pode vender offline. Tudo é enviado quando a rede voltar.
+      </p>
     </Card>
   );
 }

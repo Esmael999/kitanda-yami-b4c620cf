@@ -11,6 +11,10 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // The offline worker only exists in the real build; tests get a no-op registrar.
+      "virtual:pwa-register": path.resolve(__dirname, "./src/test/pwa-register-stub.ts"),
+    },
   },
 });

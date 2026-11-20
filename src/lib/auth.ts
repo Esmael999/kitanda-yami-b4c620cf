@@ -1,6 +1,6 @@
 // One account for the whole app: the Supabase session, read through useSyncExternalStore.
 import { useSyncExternalStore } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { isAuthRetryableFetchError, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AuthState = {
@@ -15,11 +15,48 @@ let state: AuthState = CHECKING;
 let watching = false;
 const listeners = new Set<() => void>();
 
-function apply(session: Session | null) {
+type RememberedUser = { id: string; email: string };
+const LAST_USER = "kitanda:last-user";
+
+function readRemembered(): RememberedUser | null {
+  try {
+    const raw = window.localStorage.getItem(LAST_USER);
+    const user = raw ? (JSON.parse(raw) as Partial<RememberedUser>) : null;
+    return user?.id ? { id: user.id, email: user.email ?? "" } : null;
+  } catch {
+    return null;
+  }
+}
+
+function remember(user: RememberedUser | null) {
+  try {
+    if (user) window.localStorage.setItem(LAST_USER, JSON.stringify(user));
+    else window.localStorage.removeItem(LAST_USER);
+  } catch {
+    // Private mode: the app still works, it just cannot open offline after a restart.
+  }
+}
+
+/**
+ * Decide who is signed in. Without internet an expired session cannot be refreshed, so the
+ * backend reports "no session"; the merchant must still reach their offline copy, so the last
+ * person who signed in on this phone stays in until the backend can be asked again.
+ */
+export function resolveAuth(
+  session: Pick<Session, "user"> | null,
+  offline: { unreachable: boolean; remembered: RememberedUser | null },
+): AuthState {
   const user = session?.user;
-  state = user
-    ? { status: "signed_in", userId: user.id, email: user.email ?? "" }
-    : { status: "signed_out", userId: null, email: "" };
+  if (user) return { status: "signed_in", userId: user.id, email: user.email ?? "" };
+  if (offline.unreachable && offline.remembered) {
+    return { status: "signed_in", userId: offline.remembered.id, email: offline.remembered.email };
+  }
+  return { status: "signed_out", userId: null, email: "" };
+}
+
+function apply(session: Session | null, unreachable = false) {
+  if (session?.user) remember({ id: session.user.id, email: session.user.email ?? "" });
+  state = resolveAuth(session, { unreachable, remembered: readRemembered() });
   listeners.forEach((l) => l());
 }
 
@@ -28,9 +65,24 @@ function apply(session: Session | null) {
 function watch() {
   if (watching || typeof window === "undefined") return;
   watching = true;
-  supabase.auth.onAuthStateChange((_event, session) => apply(session));
-  void supabase.auth.getSession().then(({ data }) => {
-    if (state.status === "checking") apply(data.session);
+  supabase.auth.onAuthStateChange((event, session) => {
+    // The first answer comes from getSession below, which also says whether the internet failed.
+    if (event === "INITIAL_SESSION") return;
+    if (event === "SIGNED_OUT") remember(null);
+    apply(session);
+  });
+  // Offline, the backend may take up to half a minute to give up on refreshing an old session.
+  // Don't keep the merchant on the logo meanwhile: open with the last account on this phone.
+  const openWithRemembered = () => {
+    if (state.status === "checking" && readRemembered()) apply(null, true);
+  };
+  if (!navigator.onLine) openWithRemembered();
+  else setTimeout(openWithRemembered, 4000);
+  void supabase.auth.getSession().then(({ data, error }) => {
+    const unreachable = !navigator.onLine || isAuthRetryableFetchError(error);
+    // A real answer (a session, or the backend saying there is none) always wins.
+    if (data.session || !unreachable) apply(data.session);
+    else if (state.status === "checking") apply(null, true);
   });
 }
 
@@ -73,7 +125,10 @@ export function signInWithGoogle() {
   });
 }
 
-export const signOut = () => supabase.auth.signOut();
+export const signOut = () => {
+  remember(null);
+  return supabase.auth.signOut();
+};
 
 /** The backend answers in English; merchants read Portuguese. */
 const MESSAGES: [string, string][] = [

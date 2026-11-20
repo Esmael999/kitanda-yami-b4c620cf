@@ -71,7 +71,8 @@ function SettingsPage() {
 
   const wipe = () => {
     if (!window.confirm("Apagar TODOS os dados deste telemóvel? Não dá para desfazer.")) return;
-    updateLedger(() => emptyState());
+    // Only this phone's copy: the cloud keeps everything and brings it back on the next sync.
+    updateLedger(() => emptyState(), []);
     setBusiness(emptyState().settings.businessName);
     setOwner("");
     toast.success("Todos os dados foram apagados");
