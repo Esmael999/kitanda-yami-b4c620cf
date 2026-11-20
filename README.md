@@ -1,27 +1,39 @@
-# Kitanda 
+# Kitanda
 
-https://lovable.dev/preview/EJUIGdKbP0eB7yo6NwkbDJQ0KTiasKeR
-podes acessar ??
+App de venda a retalho para telemóvel: vendas, produtos, clientes, dívidas e relatórios, com escolha de língua (português, kimbundu, kikongo, cokwe) e funcionamento sem internet.
 
-This project was built with [Lovable](https://lovable.dev).
+**App em direto**: https://kitanda-yami.lovable.app
 
-**Live app**: https://kitanda-digital.lovable.app
+Este projeto foi criado com [Lovable](https://lovable.dev).
 
-## Build with Lovable
+## O que está neste código
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/4d0e2334-c078-4c69-aad2-c078ee315b1f).
+- `src/` — a app (React + TanStack Start)
+- `src/lib/` — regras de negócio, armazenamento no telemóvel, sincronização, línguas
+- `src/routes/` — os ecrãs
+- `public/` — ícone, manifesto e restantes ficheiros do telemóvel
+- `supabase/` — configuração da base de dados (as migrações aplicam-se a partir do Lovable)
+- `src/test/` — os testes das regras de dinheiro, stock e sincronização
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## Trabalhar localmente
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Precisa de Node.js e npm — [instale com nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
 npm i
 npm run dev
 ```
+
+Depois abra o endereço que aparecer no terminal.
+
+O ficheiro `.env` leva o endereço da base de dados e a chave pública do projeto. É uma chave pública: serve só para a app falar com a base de dados e não dá acesso de administrador.
+
+## Testes
+
+```sh
+npm run test
+```
+
+## Aviso importante
+
+Este código **não traz os dados** — as contas, as vendas, os produtos e as dívidas ficam na base de dados do Lovable Cloud. Para levar os dados, exporte-os em **Mais → Base de dados → Gerir → Definições → Exportar dados**.
