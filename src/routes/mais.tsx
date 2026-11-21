@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, ChevronRight, Settings, Users } from "lucide-react";
+import { BarChart3, ChevronRight, Settings, UserCog, Users } from "lucide-react";
 import { Card, PageHeader } from "@/components/app/ui";
 import { InstallCard } from "@/components/app/install-card";
 import { useT } from "@/lib/i18n";
+import { useCloud } from "@/lib/store";
+import { can } from "@/lib/cloud-map";
+import { teamAllowed } from "@/lib/business";
 
 export const Route = createFileRoute("/mais")({
   head: () => ({
@@ -26,11 +29,14 @@ const items = [
 
 function More() {
   const t = useT();
+  const { member } = useCloud();
+  const showTeam = member?.role === "owner" && teamAllowed(member.businessType);
+  const visible = items.filter((i) => i.to !== "/relatorios" || can(member, "relatorios"));
   return (
     <div>
       <PageHeader title={t("nav.more")} />
       <div className="space-y-2 px-5">
-        {items.map(({ to, label, text, icon: Icon }) => (
+        {visible.map(({ to, label, text, icon: Icon }) => (
           <Link key={to} to={to} className="block">
             <Card className="flex items-center gap-3 py-3">
               <span className="grid size-11 place-items-center rounded-2xl bg-accent text-accent-foreground">
@@ -44,6 +50,21 @@ function More() {
             </Card>
           </Link>
         ))}
+
+        {showTeam && (
+          <Link to="/equipa" className="block">
+            <Card className="flex items-center gap-3 py-3">
+              <span className="grid size-11 place-items-center rounded-2xl bg-accent text-accent-foreground">
+                <UserCog className="size-5" />
+              </span>
+              <div className="flex-1">
+                <p className="font-semibold">Equipa</p>
+                <p className="text-sm text-muted-foreground">Ajudantes e o que cada um pode fazer</p>
+              </div>
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </Card>
+          </Link>
+        )}
 
         <InstallCard />
       </div>

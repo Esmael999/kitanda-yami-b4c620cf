@@ -156,6 +156,7 @@ export type Database = {
       }
       establishments: {
         Row: {
+          business_type: string
           created_at: string
           currency: string
           id: string
@@ -164,6 +165,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_type?: string
           created_at?: string
           currency?: string
           id?: string
@@ -172,6 +174,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_type?: string
           created_at?: string
           currency?: string
           id?: string
@@ -506,6 +509,7 @@ export type Database = {
       }
       record_sale: { Args: { _sale: Json }; Returns: undefined }
       require_establishment: { Args: never; Returns: string }
+      set_business_type: { Args: { _type: string }; Returns: undefined }
       sync_customer: {
         Args: {
           _changed_at: string

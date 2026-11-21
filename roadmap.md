@@ -12,4 +12,4 @@
 - [x] Escolher a língua: português, kimbundu, kikongo, cokwe (primeira versão: só palavras principais)
 - [ ] Rever e completar as traduções com quem fala kimbundu, kikongo e cokwe
 - [ ] Produtos de teste
-- [ ] Convidar ajudante e escolher o que cada um pode fazer
+- [x] Tipo de negócio no registo + convidar ajudante e escolher o que cada um pode fazer

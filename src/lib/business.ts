@@ -1,0 +1,40 @@
+// Kinds of small business in Angola the app supports, and what each structure allows.
+import type { Permission } from "./cloud-map";
+
+export type BusinessType = "zunga" | "bancada" | "cantina" | "miniloja" | "deposito" | "comida";
+
+export type BusinessInfo = {
+  key: BusinessType;
+  name: string;
+  examples: string;
+  /** Whether this kind of business usually has helpers at the counter. */
+  team: boolean;
+};
+
+export const BUSINESS_TYPES: BusinessInfo[] = [
+  { key: "zunga", name: "Zunga / venda ambulante", examples: "Vende sozinha na rua: fruta, água, pão", team: false },
+  { key: "bancada", name: "Bancada na praça", examples: "Peixe, hortaliça, roupa no mercado", team: false },
+  { key: "cantina", name: "Cantina de bairro", examples: "Fuba, arroz, óleo, sabão", team: true },
+  { key: "miniloja", name: "Mini-loja", examples: "Roupa, cosméticos, telemóveis, peças", team: true },
+  { key: "deposito", name: "Depósito de bebidas", examples: "Grades de gasosa, cerveja, água", team: true },
+  { key: "comida", name: "Roulotte / venda de comida", examples: "Refeições, sandes, sumos", team: true },
+];
+
+export const DEFAULT_BUSINESS: BusinessType = "cantina";
+
+export function businessInfo(type: string | null | undefined): BusinessInfo {
+  return BUSINESS_TYPES.find((b) => b.key === type) ?? BUSINESS_TYPES.find((b) => b.key === DEFAULT_BUSINESS)!;
+}
+
+/** Solo businesses have no team screen; the others can invite helpers. */
+export function teamAllowed(type: string | null | undefined): boolean {
+  return businessInfo(type).team;
+}
+
+/** What a new helper may do by default: sell, never see profits or manage stock. */
+export function defaultHelperPermissions(type: string | null | undefined): Partial<Record<Permission, boolean>> {
+  const base = { vender: true, fiado: false, receber: true, produtos: false, relatorios: false };
+  // In a drinks depot the helpers do the loading, so they also record stock arriving.
+  if (businessInfo(type).key === "deposito") return { ...base, produtos: true };
+  return base;
+}

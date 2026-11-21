@@ -247,7 +247,7 @@ async function pull() {
       permissions: (me.permissions ?? {}) as Member["permissions"],
     };
     const [est, profile, products, customers, sales, payments] = await Promise.all([
-      supabase.from("establishments").select("name").eq("id", me.establishment_id).single(),
+      supabase.from("establishments").select("name, business_type").eq("id", me.establishment_id).single(),
       supabase.from("profiles").select("full_name").eq("id", uid).maybeSingle(),
       fetchAll<ServerRows["products"][number]>((a, b) =>
         supabase.from("products").select("id, name, price, cost, stock, min_stock").is("deleted_at", null).order("id").range(a, b),
@@ -268,6 +268,7 @@ async function pull() {
       ),
     ]);
     if (est.error) throw est.error;
+    member.businessType = est.data.business_type;
     if (cloud.userId !== uid) return;
     // Local changes made while we were downloading win; sync again instead of overwriting them.
     if (localVersion !== versionAtStart || queue.length) {
@@ -288,6 +289,13 @@ async function pull() {
   } catch {
     setCloud({ status: navigator.onLine ? "error" : "offline" });
   }
+}
+
+/** Owner only: change the kind of business (needs internet). */
+export async function setBusinessType(type: string) {
+  const { error } = await supabase.rpc("set_business_type", { _type: type });
+  if (error) throw new Error(error.message);
+  if (cloud.member) setCloud({ member: { ...cloud.member, businessType: type } });
 }
 
 /** Upload a backup or the old device-only data; the server skips anything already there. */

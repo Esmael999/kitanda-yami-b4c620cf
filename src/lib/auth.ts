@@ -105,13 +105,13 @@ export function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 }
 
-export function signUp(input: { email: string; password: string; fullName: string; businessName: string }) {
+export function signUp(input: { email: string; password: string; fullName: string; businessName: string; businessType?: string }) {
   return supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
       // handle_new_user() reads these to name the person and their new store.
-      data: { full_name: input.fullName.trim(), business_name: input.businessName.trim() },
+      data: { full_name: input.fullName.trim(), business_name: input.businessName.trim(), business_type: input.businessType ?? "cantina" },
       ...(typeof window !== "undefined" ? { emailRedirectTo: window.location.origin } : {}),
     },
   });

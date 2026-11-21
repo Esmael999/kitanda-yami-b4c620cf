@@ -14,6 +14,7 @@ export const OFFLINE_PAGES = [
   "/relatorios",
   "/definicoes",
   "/mais",
+  "/equipa",
   "/entrar",
 ] as const;
 

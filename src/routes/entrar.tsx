@@ -9,6 +9,8 @@ import { authMessage, signIn, signInWithGoogle, signUp, useAuth } from "@/lib/au
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
+import { BusinessPicker } from "@/components/app/business-picker";
+import type { BusinessType } from "@/lib/business";
 
 export const Route = createFileRoute("/entrar")({
   head: () => ({
@@ -60,6 +62,7 @@ function SignIn() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [businessType, setBusinessType] = useState<BusinessType>("cantina");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -85,7 +88,7 @@ function SignIn() {
     setBusy(true);
     try {
       if (mode === "up") {
-        const { data, error: err } = await signUp({ email, password, fullName, businessName });
+        const { data, error: err } = await signUp({ email, password, fullName, businessName, businessType });
         if (err) throw err;
         // Email confirmation switched on: no session yet, the merchant must click the link.
         if (!data.session) {
@@ -190,6 +193,13 @@ function SignIn() {
                     className="h-12 rounded-xl text-base"
                   />
                 </Field>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Que tipo de negócio tem?</p>
+                  <BusinessPicker value={businessType} onChange={setBusinessType} />
+                  <p className="text-xs text-muted-foreground">
+                    Foi convidado como ajudante? Use o email que o dono registou e entra logo na loja dele.
+                  </p>
+                </div>
               </div>
             )}
 

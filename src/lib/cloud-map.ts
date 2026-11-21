@@ -17,6 +17,7 @@ export type Member = {
   active: boolean;
   permissions: Partial<Record<Permission, boolean>>;
   email: string;
+  businessType?: string;
 };
 
 /** Owners can do everything; employees only what the owner switched on. */
