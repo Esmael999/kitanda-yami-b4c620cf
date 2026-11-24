@@ -1,11 +1,11 @@
 import { Users, User } from "lucide-react";
-import { BUSINESS_TYPES, type BusinessType } from "@/lib/business";
+import { PICKER_TYPES, type BusinessType } from "@/lib/business";
 import { cn } from "@/lib/utils";
 
 export function BusinessPicker({ value, onChange }: { value: string; onChange: (t: BusinessType) => void }) {
   return (
     <div role="radiogroup" aria-label="Tipo de negócio" className="grid grid-cols-2 gap-2">
-      {BUSINESS_TYPES.map((b) => {
+      {PICKER_TYPES.map((b) => {
         const on = b.key === value;
         return (
           <button

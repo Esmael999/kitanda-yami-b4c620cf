@@ -45,7 +45,7 @@ function Debts() {
           <EmptyState
             icon={<HandCoins className="size-5" />}
             title="Ninguém lhe deve"
-            text="Quando vender fiado, a dívida aparece aqui."
+            text="Quando vender a kilapé, a dívida aparece aqui."
           />
         ) : (
           <div className="space-y-2">

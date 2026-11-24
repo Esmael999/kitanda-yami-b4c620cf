@@ -3,7 +3,7 @@ import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, Eyebrow, Field } from "@/components/app/ui";
+import { Card, Field } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import { authMessage, signIn, signInWithGoogle, signUp, useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -127,7 +127,6 @@ function SignIn() {
       </div>
 
       <div>
-        <Eyebrow className="text-primary">O caderno de vendas do seu telemóvel</Eyebrow>
         <h1 className="mt-1 text-3xl leading-tight font-extrabold">
           {mode === "up" ? "Comece a registar as suas vendas" : "Bem-vinda de volta"}
         </h1>
@@ -183,7 +182,7 @@ function SignIn() {
                     className="h-12 rounded-xl text-base"
                   />
                 </Field>
-                <Field label="Nome do negócio" htmlFor="a-business" hint="Pode deixar vazio e mudar depois.">
+                <Field label="Nome do negócio" htmlFor="a-business">
                   <Input
                     id="a-business"
                     value={businessName}
@@ -196,9 +195,6 @@ function SignIn() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Que tipo de negócio tem?</p>
                   <BusinessPicker value={businessType} onChange={setBusinessType} />
-                  <p className="text-xs text-muted-foreground">
-                    Foi convidado como ajudante? Use o email que o dono registou e entra logo na loja dele.
-                  </p>
                 </div>
               </div>
             )}
@@ -219,7 +215,7 @@ function SignIn() {
             <Field
               label="Palavra-passe"
               htmlFor="a-password"
-              {...(mode === "up" ? { hint: "Pelo menos 6 letras, e não muito simples." } : {})}
+              
             >
               <Input
                 id="a-password"

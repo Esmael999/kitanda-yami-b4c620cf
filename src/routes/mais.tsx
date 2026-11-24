@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, ChevronRight, Settings, UserCog, Users } from "lucide-react";
 import { Card, PageHeader } from "@/components/app/ui";
-import { InstallCard } from "@/components/app/install-card";
 import { useT } from "@/lib/i18n";
 import { useCloud } from "@/lib/store";
 import { can } from "@/lib/cloud-map";
@@ -66,7 +65,6 @@ function More() {
           </Link>
         )}
 
-        <InstallCard />
       </div>
     </div>
   );

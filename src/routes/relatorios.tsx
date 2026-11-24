@@ -24,6 +24,7 @@ const periods = [
   { days: 1, label: "Hoje" },
   { days: 7, label: "7 dias" },
   { days: 30, label: "30 dias" },
+  { days: 0, label: "Escolher" },
 ] as const;
 
 const weekday = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -32,10 +33,15 @@ function Reports() {
   const state = useLedger();
   const t = useT();
   const [days, setDays] = useState<number>(7);
-  const to = addDays(startOfDay(new Date()), 1);
-  const from = addDays(to, -days);
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const [fromTxt, setFromTxt] = useState(() => iso(addDays(new Date(), -6)));
+  const [toTxt, setToTxt] = useState(() => iso(new Date()));
+  const custom = days === 0;
+  const parse = (t: string) => { const [y, m, d] = t.split("-").map(Number); return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1); };
+  const to = custom ? addDays(parse(toTxt), 1) : addDays(startOfDay(new Date()), 1);
+  const from = custom ? parse(fromTxt) : addDays(to, -days);
   const stats = periodStats(state, from, to);
-  const chart = salesByDay(state, days === 1 ? 7 : days);
+  const chart = salesByDay(state, custom ? Math.min(31, Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000))) : days === 1 ? 7 : days, addDays(to, -1));
   const max = Math.max(1, ...chart.map((c) => c.total));
   const top = topProducts(state, from, to);
   const margin = stats.total ? Math.round((stats.profit / stats.total) * 100) : 0;
@@ -44,7 +50,7 @@ function Reports() {
     <div>
       <PageHeader title={t("page.reports")} back="/mais" />
       <div className="space-y-4 px-5">
-        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-secondary p-1">
+        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-secondary p-1">
           {periods.map((p) => (
             <button
               key={p.days}
@@ -58,6 +64,17 @@ function Reports() {
             </button>
           ))}
         </div>
+
+        {custom && (
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-xs text-muted-foreground">De
+              <input type="date" value={fromTxt} max={toTxt} onChange={(e) => setFromTxt(e.target.value)} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm text-foreground" />
+            </label>
+            <label className="text-xs text-muted-foreground">Até
+              <input type="date" value={toTxt} min={fromTxt} onChange={(e) => setToTxt(e.target.value)} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm text-foreground" />
+            </label>
+          </div>
+        )}
 
         <section className="rounded-3xl bg-gradient-hero p-5 shadow-glow">
           <Eyebrow className="text-foreground/80">Vendido</Eyebrow>
@@ -74,7 +91,7 @@ function Reports() {
           <Card>
             <p className="text-xs text-muted-foreground">Recebido</p>
             <p className="text-lg font-bold tabular">{formatKz(stats.received)}</p>
-            <p className="text-xs text-debt">fiado {formatKz(stats.fiado)}</p>
+            <p className="text-xs text-debt">kilapé {formatKz(stats.fiado)}</p>
           </Card>
         </div>
 

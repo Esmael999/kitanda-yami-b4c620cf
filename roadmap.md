@@ -13,3 +13,4 @@
 - [ ] Rever e completar as traduções com quem fala kimbundu, kikongo e cokwe
 - [ ] Produtos de teste
 - [x] Tipo de negócio no registo + convidar ajudante e escolher o que cada um pode fazer
+- [x] Juntar tipos de negócio parecidos, login mais simples, relatório por período, pesquisa de cliente, Kilapé, tirar cartão de instalar

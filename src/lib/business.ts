@@ -12,13 +12,16 @@ export type BusinessInfo = {
 };
 
 export const BUSINESS_TYPES: BusinessInfo[] = [
-  { key: "zunga", name: "Zunga / venda ambulante", examples: "Vende sozinha na rua: fruta, água, pão", team: false },
+  { key: "zunga", name: "Zunga / bancada", examples: "Sozinha na rua ou na praça", team: false },
   { key: "bancada", name: "Bancada na praça", examples: "Peixe, hortaliça, roupa no mercado", team: false },
-  { key: "cantina", name: "Cantina de bairro", examples: "Fuba, arroz, óleo, sabão", team: true },
+  { key: "cantina", name: "Cantina / mini-loja", examples: "Mercearia, roupa, cosméticos", team: true },
   { key: "miniloja", name: "Mini-loja", examples: "Roupa, cosméticos, telemóveis, peças", team: true },
   { key: "deposito", name: "Depósito de bebidas", examples: "Grades de gasosa, cerveja, água", team: true },
   { key: "comida", name: "Roulotte / venda de comida", examples: "Refeições, sandes, sumos", team: true },
 ];
+
+/** Similar kinds are merged into one choice on screen. */
+export const PICKER_TYPES = BUSINESS_TYPES.filter((b) => b.key !== "bancada" && b.key !== "miniloja");
 
 export const DEFAULT_BUSINESS: BusinessType = "cantina";
 

@@ -51,7 +51,7 @@ export function CustomerDrawer({
             at: s.createdAt,
             label: s.items.map((i) => `${i.qty}× ${i.name}`).join(", "),
             amount: s.total,
-            note: s.total > s.paid ? `Fiado ${formatKz(s.total - s.paid)}` : "Pago",
+            note: s.total > s.paid ? `Kilapé ${formatKz(s.total - s.paid)}` : "Pago",
             kind: "sale" as const,
           })),
         ...state.payments
@@ -108,7 +108,7 @@ export function CustomerDrawer({
           <DrawerTitle>{isNew ? "Novo cliente" : customer?.name}</DrawerTitle>
           <DrawerDescription>
             {isNew
-              ? "Guarde o contacto para vender fiado e enviar lembretes."
+              ? "Guarde o contacto para vender a kilapé e enviar lembretes."
               : debt > 0
                 ? `Deve ${formatKz(debt)}${since ? ` desde ${formatDate(since)} (${daysSince(since)} dias)` : ""}`
                 : "Sem dívidas."}

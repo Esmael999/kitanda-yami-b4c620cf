@@ -143,7 +143,7 @@ export function recordSale(state: LedgerState, input: SaleInput): LedgerState {
 
   if (input.mode === "fiado") {
     if (!customerId || !state.customers.some((c) => c.id === customerId))
-      throw new LedgerError("Escolha o cliente para vender fiado.");
+      throw new LedgerError("Escolha o cliente para vender a kilapé.");
     const upfront = input.upfront ?? 0;
     if (upfront < 0 || upfront >= total)
       throw new LedgerError("A entrada tem de ser menor que o total.");

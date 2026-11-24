@@ -200,7 +200,7 @@ function Home() {
                   <div className="text-right">
                     <p className="font-semibold tabular">{formatKz(s.total)}</p>
                     <p className={fiado ? "text-xs text-debt" : "text-xs text-primary"}>
-                      {fiado ? "Fiado" : "Pago"}
+                      {fiado ? "Kilapé" : "Pago"}
                     </p>
                   </div>
                 </div>

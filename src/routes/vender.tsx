@@ -22,9 +22,9 @@ export const Route = createFileRoute("/vender")({
   head: () => ({
     meta: [
       { title: "Nova venda — Kitanda Yami" },
-      { name: "description", content: "Registe uma venda em segundos, a pronto ou fiado." },
+      { name: "description", content: "Registe uma venda em segundos, a pronto ou kilapé." },
       { property: "og:title", content: "Nova venda — Kitanda Yami" },
-      { property: "og:description", content: "Registe uma venda em segundos, a pronto ou fiado." },
+      { property: "og:description", content: "Registe uma venda em segundos, a pronto ou kilapé." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -278,7 +278,7 @@ function CheckoutDrawer({
                     : "text-muted-foreground",
                 )}
               >
-                {m === "pronto" ? "A pronto" : "Fiado"}
+                {m === "pronto" ? "A pronto" : "Kilapé"}
               </button>
             ))}
           </div>
@@ -314,21 +314,7 @@ function CheckoutDrawer({
                 className="h-12 rounded-xl text-base"
               />
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {state.customers.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setCustomerId(customerId === c.id ? null : c.id)}
-                    className={cn(
-                      "flex items-center gap-1 rounded-full border px-3 py-2 text-sm",
-                      customerId === c.id ? "border-primary bg-accent text-accent-foreground" : "bg-card",
-                    )}
-                  >
-                    {customerId === c.id && <Check className="size-3.5" />}
-                    {c.name}
-                  </button>
-                ))}
-              </div>
+              <CustomerSearch customers={state.customers} value={customerId} onChange={setCustomerId} />
             )}
             <Button
               variant="ghost"
@@ -360,5 +346,49 @@ function CheckoutDrawer({
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
+  );
+}
+
+function CustomerSearch({ customers, value, onChange }: { customers: { id: string; name: string; phone: string }[]; value: string | null; onChange: (id: string | null) => void }) {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const chosen = customers.find((c) => c.id === value);
+  const list = customers
+    .filter((c) => `${c.name} ${c.phone}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 8);
+  if (chosen)
+    return (
+      <button type="button" onClick={() => onChange(null)} className="flex h-12 w-full items-center gap-2 rounded-xl border border-primary bg-accent px-3 text-left text-sm text-accent-foreground">
+        <Check className="size-4" /> <span className="flex-1 truncate font-semibold">{chosen.name}</span>
+        <span className="text-xs">Trocar</span>
+      </button>
+    );
+  return (
+    <div className="relative">
+      <Input
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Procurar cliente por nome ou telefone"
+        className="h-12 rounded-xl text-base"
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border bg-popover p-1 shadow-card">
+          {list.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">Nenhum cliente encontrado</p>
+          ) : (
+            list.map((c) => (
+              <button key={c.id} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(c.id); setQ(""); setOpen(false); }}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-accent">
+                <span className="truncate font-medium">{c.name}</span>
+                <span className="text-xs text-muted-foreground">{c.phone}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }

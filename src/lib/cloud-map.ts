@@ -6,7 +6,7 @@ export type Permission = "vender" | "fiado" | "receber" | "produtos" | "relatori
 
 export const PERMISSIONS: { key: Permission; label: string }[] = [
   { key: "vender", label: "Registar vendas" },
-  { key: "fiado", label: "Vender fiado" },
+  { key: "fiado", label: "Vender a kilapé" },
   { key: "receber", label: "Receber pagamentos" },
   { key: "produtos", label: "Gerir produtos e stock" },
   { key: "relatorios", label: "Ver relatórios" },

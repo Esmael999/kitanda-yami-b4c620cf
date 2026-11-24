@@ -53,7 +53,7 @@ function Customers() {
           <EmptyState
             icon={<Users className="size-5" />}
             title={state.customers.length ? "Nenhum cliente encontrado" : "Ainda sem clientes"}
-            text="Adicione clientes para vender fiado e ver o histórico."
+            text="Adicione clientes para vender a kilapé e ver o histórico."
           />
         ) : (
           list.map((c) => {
