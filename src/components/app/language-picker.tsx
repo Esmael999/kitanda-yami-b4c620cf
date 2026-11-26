@@ -26,7 +26,7 @@ export function LanguagePicker({ className }: { className?: string }) {
             )}
           >
             {l.name}
-            {l.code !== "pt" && <span aria-hidden="true" className="mt-1 block text-[10px] font-normal">Tradução parcial · {Math.round(coverage(l.code) * 100)}%</span>}
+            {l.code !== "pt" && <span aria-hidden="true" className="mt-1 block text-[10px] font-normal">Parcial · {Math.round(coverage(l.code) * 100)}% das chaves</span>}
           </button>
         ))}
       </div>

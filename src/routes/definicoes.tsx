@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field, PageHeader } from "@/components/app/ui";
 import { signOut, useAuth } from "@/lib/auth";
-import { updateLedger, useCloud, useLedger } from "@/lib/store";
-import { initialBusinessName } from "@/lib/business";
+import { setBusinessType, updateLedger, useCloud, useLedger } from "@/lib/store";
+import { initialBusinessName, type BusinessType } from "@/lib/business";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 import { useT } from "@/lib/i18n";
 import { useThemePreference } from "@/lib/theme";
+import { BusinessPicker } from "@/components/app/business-picker";
 import { LanguagePicker } from "@/components/app/language-picker";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
@@ -37,6 +38,15 @@ function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const auth = useAuth();
   const { member, pending, failed } = useCloud();
+  const [changingType, setChangingType] = useState(false);
+  const [pendingType, setPendingType] = useState<BusinessType | null>(null);
+  const saveType = async () => {
+    if (!pendingType || changingType || member?.role !== "owner" || !member.active) return;
+    setChangingType(true);
+    try { await setBusinessType(pendingType); setPendingType(null); toast.success("Tipo de negócio guardado"); }
+    catch { toast.error("Não foi possível guardar. Verifique a ligação à internet."); }
+    finally { setChangingType(false); }
+  };
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState(false);
@@ -128,6 +138,14 @@ function SettingsPage() {
           </Button>
         </Card>
 
+        {member?.role === "owner" && member.active && <Card className="space-y-3">
+          <div>
+            <p className="font-semibold">Tipo de negócio</p>
+            <p className="text-sm text-muted-foreground">Escolha a categoria que descreve a sua actividade. Qualquer tipo de negócio pode ter ajudantes. Os produtos, vendas e dívidas ficam como estão.</p>
+          </div>
+          <BusinessPicker value={pendingType ?? member.businessType ?? "cantina"} onChange={setPendingType} />
+          <Button variant="hero" className="w-full" disabled={changingType || !pendingType || pendingType === member.businessType} onClick={() => void saveType()}>{changingType ? "A guardar…" : t("action.save")}</Button>
+        </Card>}
         <Card className="space-y-3">
           <div>
             <p className="font-semibold">{t("settings.backup")}</p>
