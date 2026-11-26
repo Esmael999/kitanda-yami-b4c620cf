@@ -65,7 +65,7 @@ function SettingsPage() {
       ...s,
       settings: { businessName: business.trim() || initialBusinessName(owner), ownerName: owner.trim() },
     }));
-    toast.success("Definições guardadas");
+    toast.success(t("settings.saved"));
   };
 
   const exportData = () => {
@@ -75,30 +75,30 @@ function SettingsPage() {
     a.download = `kitanda-copia-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast.success("Cópia de segurança descarregada");
+    toast.success(t("settings.exported"));
   };
 
   const importData = async (file: File) => {
     try {
       const data = JSON.parse(await file.text()) as LedgerState;
       if (!Array.isArray(data.products) || !Array.isArray(data.sales)) throw new Error();
-      if (!window.confirm("Substituir os dados deste telemóvel pela cópia?")) return;
+      if (!window.confirm(t("settings.restoreConfirm"))) return;
       updateLedger(() => ({ ...emptyState(), ...data }));
       setBusiness(data.settings?.businessName ?? "");
       setOwner(data.settings?.ownerName ?? "");
-      toast.success("Dados restaurados");
+      toast.success(t("settings.restored"));
     } catch {
-      toast.error("Este ficheiro não é uma cópia da Kitanda.");
+      toast.error(t("settings.invalidBackup"));
     }
   };
 
   const wipe = () => {
-    if (!window.confirm("Apagar TODOS os dados deste telemóvel? Não dá para desfazer.")) return;
+    if (!window.confirm(t("settings.eraseConfirm"))) return;
     // Only this phone's copy: the cloud keeps everything and brings it back on the next sync.
     updateLedger(() => emptyState(), []);
     setBusiness(emptyState().settings.businessName);
     setOwner("");
-    toast.success("Todos os dados foram apagados");
+    toast.success(t("settings.erased"));
   };
 
   return (
@@ -109,18 +109,18 @@ function SettingsPage() {
           <LanguagePicker />
         </Card>
         <Card className="space-y-2">
-          <p className="font-semibold">Aparência</p>
-          <div role="group" aria-label="Tema" className="grid grid-cols-2 gap-2">
-            <Button variant={theme === "dark" ? "hero" : "soft"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>Escuro</Button>
-            <Button variant={theme === "light" ? "hero" : "soft"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}>Claro</Button>
+          <p className="font-semibold">{t("settings.appearance")}</p>
+          <div role="group" aria-label={t("settings.theme")} className="grid grid-cols-2 gap-2">
+            <Button variant={theme === "dark" ? "hero" : "soft"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>{t("settings.dark")}</Button>
+            <Button variant={theme === "light" ? "hero" : "soft"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}>{t("settings.light")}</Button>
           </div>
         </Card>
 
         <Card className="space-y-3">
-          <Field label="Nome do negócio" htmlFor="s-business">
+          <Field label={t("settings.businessName")} htmlFor="s-business">
             <Input id="s-business" value={business} onChange={(e) => setBusiness(e.target.value)} className="h-12 rounded-xl text-base" />
           </Field>
-          <Field label="O seu nome" htmlFor="s-owner" hint="Aparece na saudação do início.">
+          <Field label={t("settings.ownerName")} htmlFor="s-owner" hint={t("settings.greetingHint")}>
             <Input id="s-owner" value={owner} onChange={(e) => setOwner(e.target.value)} className="h-12 rounded-xl text-base" />
           </Field>
           <Button variant="hero" size="xl" className="w-full" onClick={save}>
@@ -130,10 +130,9 @@ function SettingsPage() {
 
         <Card className="space-y-3">
           <div>
-            <p className="font-semibold">Cópia de segurança</p>
+            <p className="font-semibold">{t("settings.backup")}</p>
             <p className="text-sm text-muted-foreground">
-              Além do que fica na sua conta, guarde uma cópia neste telemóvel de vez em quando, para
-              não perder nada se trocar de telemóvel.
+              {t("settings.backupHint")}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
