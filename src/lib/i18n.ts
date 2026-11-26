@@ -1,14 +1,18 @@
-// Screen language. Portuguese is complete; Kimbundu, Kikongo and Cokwe are a first draft covering
-// the main words, and anything without a translation falls back to Portuguese.
+// Screen language. Portuguese is the fallback; national language dictionaries are partial.
+// Sources and review requirements: docs/localizacao.md.
 import { useSyncExternalStore } from "react";
 
-export type Lang = "pt" | "kmb" | "kg" | "cjk";
+export type Lang = "pt" | "kmb" | "kg" | "cjk" | "umb" | "kj" | "nyk" | "lue";
 
 export const LANGUAGES: { code: Lang; name: string; html: string }[] = [
   { code: "pt", name: "Português", html: "pt-AO" },
   { code: "kmb", name: "Kimbundu", html: "kmb" },
   { code: "kg", name: "Kikongo", html: "kg" },
   { code: "cjk", name: "Cokwe", html: "cjk" },
+  { code: "umb", name: "Umbundu", html: "umb" },
+  { code: "kj", name: "Oshikwanyama", html: "kj" },
+  { code: "nyk", name: "Olunyaneka", html: "nyk" },
+  { code: "lue", name: "Luvale", html: "lue" },
 ];
 
 const pt = {
@@ -99,6 +103,7 @@ const drafts: Record<Exclude<Lang, "pt">, Partial<Record<MessageKey, string>>> =
     "nav.home": "Inzo",
     "nav.products": "Ima",
     "nav.sell": "Kusumbisa",
+    "nav.debts": "Makongo",
     "greet.morning": "Uazekele kiambote",
     "greet.afternoon": "Kiambote",
     "greet.evening": "Kiambote",
@@ -118,11 +123,38 @@ const drafts: Record<Exclude<Lang, "pt">, Partial<Record<MessageKey, string>>> =
   cjk: {
     "nav.home": "Zuwo",
     "nav.products": "Yuma",
-    "nav.sell": "Kulandesa",
+    "nav.sell": "Kulandjisa",
     "greet.morning": "Moyo",
     "greet.afternoon": "Moyo",
     "greet.evening": "Moyo",
-    "action.newSale": "Kulandesa",
+    "action.newSale": "Kulandjisa",
+    "auth.signIn": "Kundjia",
+  },
+  umb: {
+    "greet.morning": "Kalunga",
+    "greet.afternoon": "Kalunga",
+    "greet.evening": "Kalunga",
+    "nav.sell": "Okulandisa",
+    "action.receive": "Okutambula",
+    "auth.signIn": "Okuiñila",
+    "report.today": "Etali",
+  },
+  kj: {
+    "greet.morning": "Wa lele po?",
+    "greet.afternoon": "Wa uhala po?",
+    "greet.evening": "Wa tokelwa po?",
+    "nav.sell": "Landifa",
+  },
+  nyk: {
+    "greet.morning": "Okamene",
+    "greet.afternoon": "Okunyanga",
+    "greet.evening": "Okuluvelela",
+  },
+  lue: {
+    "greet.morning": "Chimene mwane",
+    "greet.afternoon": "Musana mwane",
+    "greet.evening": "Chingoloshi mwane",
+    "report.today": "Lelo",
   },
 };
 

@@ -1,5 +1,5 @@
 import { Languages } from "lucide-react";
-import { LANGUAGES, setLang, useLang, useT } from "@/lib/i18n";
+import { LANGUAGES, coverage, setLang, useLang, useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function LanguagePicker({ className }: { className?: string }) {
@@ -26,10 +26,12 @@ export function LanguagePicker({ className }: { className?: string }) {
             )}
           >
             {l.name}
+            {l.code !== "pt" && <span aria-hidden="true" className="mt-1 block text-[10px] font-normal">Tradução parcial · {Math.round(coverage(l.code) * 100)}%</span>}
           </button>
         ))}
       </div>
       {lang !== "pt" && <p className="text-xs text-muted-foreground">{t("lang.hint")}</p>}
+      <p className="text-xs text-muted-foreground">Ngangela e Lunda: em preparação.</p>
     </div>
   );
 }
