@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Download, LogOut, Trash2, Upload } from "lucide-react";
+import { ChevronRight, CloudUpload, Download, Loader2, LogOut, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { BusinessPicker } from "@/components/app/business-picker";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 export const Route = createFileRoute("/definicoes")({
   head: () => ({
@@ -33,7 +34,10 @@ function SettingsPage() {
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
   const auth = useAuth();
-  const { member } = useCloud();
+  const { member, pending, failed } = useCloud();
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState(false);
   const changeType = async (type: string) => {
     try {
       await setBusinessType(type);
@@ -45,9 +49,21 @@ function SettingsPage() {
   const navigate = useNavigate();
 
   const leave = async () => {
-    if (!window.confirm("Sair da conta neste telemóvel?")) return;
-    await signOut();
-    await navigate({ to: "/entrar" });
+    if (leaving) return;
+    setLeaving(true);
+    setLeaveError(false);
+    try {
+      const { error } = await signOut();
+      if (error) {
+        setLeaveError(true);
+        return;
+      }
+      await navigate({ to: "/entrar", replace: true });
+    } catch {
+      setLeaveError(true);
+    } finally {
+      setLeaving(false);
+    }
   };
 
   const save = () => {
@@ -123,19 +139,6 @@ function SettingsPage() {
 
         <Card className="space-y-3">
           <div>
-            <p className="font-semibold">A sua conta</p>
-            <p className="text-sm text-muted-foreground">
-              {auth.email || "Sem email ligado."} As vendas que registar ficam guardadas na sua conta e
-              aparecem em qualquer telemóvel onde entrar.
-            </p>
-          </div>
-          <Button variant="soft" className="w-full" onClick={leave}>
-            <LogOut /> Sair da conta
-          </Button>
-        </Card>
-
-        <Card className="space-y-3">
-          <div>
             <p className="font-semibold">Cópia de segurança</p>
             <p className="text-sm text-muted-foreground">
               Além do que fica na sua conta, guarde uma cópia neste telemóvel de vez em quando, para
@@ -166,7 +169,40 @@ function SettingsPage() {
         <Button variant="ghost" className="w-full text-destructive" onClick={wipe}>
           <Trash2 /> Apagar todos os dados
         </Button>
+
+        <section aria-labelledby="account-heading" className="border-t pt-5 pb-4">
+          <h2 id="account-heading" className="mb-4 text-sm font-semibold text-muted-foreground">{t("account.title")}</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-primary"><UserRound className="size-5" /></span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold break-words">{state.settings.ownerName || state.settings.businessName}</p>
+              <p className="text-sm break-all text-muted-foreground">{auth.email}</p>
+              {member && <p className="mt-1 text-xs text-muted-foreground">{t(member.role === "owner" ? "account.owner" : "account.employee")}</p>}
+            </div>
+          </div>
+          <Button variant="outline" className="h-12 w-full justify-start gap-3 text-destructive" onClick={() => { setLeaveError(false); setLeaveOpen(true); }}>
+            <LogOut /> {t("account.signOut")} <ChevronRight className="ml-auto" />
+          </Button>
+        </section>
       </div>
+      <Drawer open={leaveOpen} onOpenChange={(open) => { if (!leaving) setLeaveOpen(open); }} dismissible={!leaving}>
+        <DrawerContent className="mx-auto max-w-md pb-safe">
+          <DrawerHeader className="px-5 pt-5 text-left sm:text-left">
+            <span className="mb-3 grid size-12 place-items-center rounded-full bg-secondary text-destructive"><LogOut className="size-6" /></span>
+            <DrawerTitle className="leading-snug tracking-normal">{t("account.confirmTitle")}</DrawerTitle>
+            <DrawerDescription className="mt-2 leading-relaxed">{t("account.confirmHint")}</DrawerDescription>
+          </DrawerHeader>
+          {(pending > 0 || failed.length > 0) && <div className="mx-5 flex items-start gap-3 rounded-lg border bg-secondary p-3 text-sm text-secondary-foreground"><CloudUpload className="mt-0.5 size-5 shrink-0" /><p>{t("account.pendingHint")}</p></div>}
+          {leaveError && <p role="alert" className="px-5 text-sm text-destructive">{t("account.error")}</p>}
+          <DrawerFooter className="px-5 pb-5">
+            <Button variant="destructive" className="h-12 w-full" disabled={leaving} onClick={() => void leave()}>
+              {leaving ? <Loader2 className="animate-spin motion-reduce:animate-none" /> : <LogOut />}
+              {t(leaving ? "account.leaving" : "account.signOut")}
+            </Button>
+            <Button variant="outline" className="h-12 w-full" disabled={leaving} autoFocus onClick={() => setLeaveOpen(false)}>{t("account.stay")}</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
