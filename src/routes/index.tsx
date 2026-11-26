@@ -57,8 +57,8 @@ function Home() {
     <div className="space-y-5 px-5 pt-safe">
       <div className="flex items-center justify-between">
         <Logo className="text-lg" />
-        <Link to="/definicoes" className="max-w-[55%] truncate text-sm text-muted-foreground">
-          {state.settings.businessName}
+        <Link to="/definicoes" className="flex max-w-[50%] min-w-0 items-center gap-2 text-sm text-muted-foreground">
+          <span className="truncate">{state.settings.businessName}</span>
         </Link>
       </div>
 

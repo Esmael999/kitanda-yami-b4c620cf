@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { applyTheme, readTheme } from "@/lib/theme";
 import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { BookOpen, HandCoins, Home, LayoutGrid, Package, Plus } from "lucide-react";
 import { isAuthPage, useAuth } from "@/lib/auth";
@@ -80,6 +81,7 @@ export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const auth = useAuth();
   const ready = useLedgerReady();
+  useEffect(() => { applyTheme(readTheme()); }, []);
 
   // The account owns the offline copy: load it in when someone signs in, drop it when they leave.
   useEffect(() => {

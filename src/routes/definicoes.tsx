@@ -10,6 +10,7 @@ import { updateLedger, useCloud, useLedger } from "@/lib/store";
 import { initialBusinessName } from "@/lib/business";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 import { useT } from "@/lib/i18n";
+import { useThemePreference } from "@/lib/theme";
 import { LanguagePicker } from "@/components/app/language-picker";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/definicoes")({
 function SettingsPage() {
   const state = useLedger();
   const t = useT();
+  const [theme, setTheme] = useThemePreference();
   const [business, setBusiness] = useState(state.settings.businessName);
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -105,6 +107,13 @@ function SettingsPage() {
       <div className="space-y-4 px-5">
         <Card>
           <LanguagePicker />
+        </Card>
+        <Card className="space-y-2">
+          <p className="font-semibold">Aparência</p>
+          <div role="group" aria-label="Tema" className="grid grid-cols-2 gap-2">
+            <Button variant={theme === "dark" ? "hero" : "soft"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>Escuro</Button>
+            <Button variant={theme === "light" ? "hero" : "soft"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}>Claro</Button>
+          </div>
         </Card>
 
         <Card className="space-y-3">

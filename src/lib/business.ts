@@ -46,3 +46,10 @@ export function defaultHelperPermissions(type: string | null | undefined): Parti
   if (businessInfo(type).key === "deposito") return { ...base, produtos: true };
   return base;
 }
+
+/** Presets only grant existing server-enforced capabilities; owners can customise them. */
+export const HELPER_PRESETS: { name: string; description: string; permissions: Record<Permission, boolean> }[] = [
+  { name: "Vendedor", description: "Regista vendas e recebe pagamentos.", permissions: { vender: true, fiado: false, receber: true, produtos: false, relatorios: false } },
+  { name: "Responsável de stock", description: "Gere produtos e stock, sem aceder aos relatórios.", permissions: { vender: false, fiado: false, receber: false, produtos: true, relatorios: false } },
+  { name: "Gerente", description: "Gere vendas, kilapé, stock e relatórios; não administra a equipa.", permissions: { vender: true, fiado: true, receber: true, produtos: true, relatorios: true } },
+];
