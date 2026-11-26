@@ -8,6 +8,7 @@ import { useCloud, useLedger, updateLedger } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { useDetail } from "@/lib/device-details";
 import { paymentLabel } from "@/lib/payment-method";
+import { PhotoThumb } from "@/components/app/device-photo";
 import {
   addDays,
   debtors,
@@ -48,6 +49,8 @@ function PaymentNote({ id }: { id: string }) {
 
 function Home() {
   const state = useLedger();
+  const { userId } = useCloud();
+  const photo = useDetail(userId, "business-photo");
   const t = useT();
   const today = startOfDay(new Date());
   const stats = periodStats(state, today, addDays(today, 1));
@@ -68,6 +71,7 @@ function Home() {
         <Logo className="text-lg" />
         <Link to="/definicoes" className="flex max-w-[50%] min-w-0 items-center gap-2 text-sm text-muted-foreground">
           <span className="truncate">{state.settings.businessName}</span>
+          <PhotoThumb value={photo} profile className="size-9" />
         </Link>
       </div>
 

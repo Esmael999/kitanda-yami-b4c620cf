@@ -18,7 +18,8 @@ import { cartTotal, formatKz, LedgerError, newId, receiptText, recordSale, type 
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { PAYMENT_METHODS, recordedMethod, type PaymentMethod } from "@/lib/payment-method";
-import { writeDetail } from "@/lib/device-details";
+import { writeDetail, useDetail } from "@/lib/device-details";
+import { PhotoThumb } from "@/components/app/device-photo";
 
 export const Route = createFileRoute("/vender")({
   head: () => ({
@@ -109,6 +110,7 @@ function Sell() {
                   onClick={() => change(p.id, 1, p.stock)}
                   className="block w-full text-left"
                 >
+                  <SaleProductPhoto id={p.id} />
                   <p className="line-clamp-2 min-h-10 text-sm font-semibold leading-tight">{p.name}</p>
                   <p className="mt-1 font-bold text-primary tabular">{formatKz(p.price)}</p>
                   <p className="text-xs text-muted-foreground">{out ? "Esgotado" : `${p.stock} em stock`}</p>
@@ -165,6 +167,12 @@ function Sell() {
       />
     </div>
   );
+}
+
+function SaleProductPhoto({ id }: { id: string }) {
+  const { userId } = useCloud();
+  const photo = useDetail(userId, `product:${id}`);
+  return photo ? <PhotoThumb value={photo} className="mb-2 h-20 w-full" /> : null;
 }
 
 function CheckoutDrawer({

@@ -11,6 +11,8 @@ import { initialBusinessName, type BusinessType } from "@/lib/business";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 import { useT } from "@/lib/i18n";
 import { useThemePreference } from "@/lib/theme";
+import { PhotoPicker } from "@/components/app/device-photo";
+import { clearDetails, useDetail, writeDetail } from "@/lib/device-details";
 import { BusinessPicker } from "@/components/app/business-picker";
 import { LanguagePicker } from "@/components/app/language-picker";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -37,7 +39,18 @@ function SettingsPage() {
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
   const auth = useAuth();
-  const { member, pending, failed } = useCloud();
+  const { member, pending, failed, userId } = useCloud();
+  const profilePhoto = useDetail(userId, "business-photo");
+  const customCategory = useDetail(userId, "business-category");
+  const [category, setCategory] = useState("");
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const saveDetail = async (key: string, value: string | null) => {
+    if (!userId || member?.role !== "owner" || !member.active || detailsBusy) return;
+    setDetailsBusy(true);
+    try { await writeDetail(userId, key, value); toast.success("Guardado neste dispositivo"); }
+    catch { toast.error("Não foi possível guardar neste dispositivo."); }
+    finally { setDetailsBusy(false); }
+  };
   const [changingType, setChangingType] = useState(false);
   const [pendingType, setPendingType] = useState<BusinessType | null>(null);
   const saveType = async () => {
@@ -102,8 +115,9 @@ function SettingsPage() {
     }
   };
 
-  const wipe = () => {
+  const wipe = async () => {
     if (!window.confirm(t("settings.eraseConfirm"))) return;
+    try { if (userId) await clearDetails(userId); } catch { toast.error("Não foi possível apagar os dados locais adicionais."); return; }
     // Only this phone's copy: the cloud keeps everything and brings it back on the next sync.
     updateLedger(() => emptyState(), []);
     setBusiness(emptyState().settings.businessName);
@@ -127,6 +141,7 @@ function SettingsPage() {
         </Card>
 
         <Card className="space-y-3">
+          {member?.role === "owner" && member.active && <PhotoPicker profile value={profilePhoto} disabled={detailsBusy} onChange={value => void saveDetail("business-photo", value)} />}
           <Field label={t("settings.businessName")} htmlFor="s-business">
             <Input id="s-business" value={business} onChange={(e) => setBusiness(e.target.value)} className="h-12 rounded-xl text-base" />
           </Field>
@@ -143,8 +158,16 @@ function SettingsPage() {
             <p className="font-semibold">Tipo de negócio</p>
             <p className="text-sm text-muted-foreground">Escolha a categoria que descreve a sua actividade. Qualquer tipo de negócio pode ter ajudantes. Os produtos, vendas e dívidas ficam como estão.</p>
           </div>
+          {customCategory && <p className="rounded-xl bg-secondary p-3 text-sm">Categoria personalizada: <strong>{customCategory}</strong></p>}
           <BusinessPicker value={pendingType ?? member.businessType ?? "cantina"} onChange={setPendingType} />
           <Button variant="hero" className="w-full" disabled={changingType || !pendingType || pendingType === member.businessType} onClick={() => void saveType()}>{changingType ? "A guardar…" : t("action.save")}</Button>
+          <div className="border-t pt-3 space-y-2">
+            <Field label="Criar o meu tipo de negócio" htmlFor="custom-category" hint="Personalização da versão de teste, guardada neste dispositivo. Não altera permissões.">
+              <Input id="custom-category" maxLength={80} value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex.: Oficina de reparação" />
+            </Field>
+            <Button variant="soft" className="w-full" disabled={!category.trim() || detailsBusy} onClick={() => void saveDetail("business-category", category.trim())}>Guardar categoria personalizada</Button>
+            {customCategory && <Button variant="ghost" className="w-full" disabled={detailsBusy} onClick={() => void saveDetail("business-category", null)}>Usar apenas categoria padrão</Button>}
+          </div>
         </Card>}
         <Card className="space-y-3">
           <div>
@@ -174,7 +197,7 @@ function SettingsPage() {
           />
         </Card>
 
-        <Button variant="ghost" className="w-full text-destructive" onClick={wipe}>
+        <Button variant="ghost" className="w-full text-destructive" onClick={() => void wipe()}>
           <Trash2 /> Apagar todos os dados
         </Button>
 

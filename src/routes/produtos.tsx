@@ -13,10 +13,13 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Card, EmptyState, Field, MoneyInput, NumberInput, PageHeader } from "@/components/app/ui";
-import { updateLedger, useLedger } from "@/lib/store";
+import { updateLedger, useCloud, useLedger } from "@/lib/store";
 import { formatKz, isLowStock, LedgerError, newId, validateProduct, type Product } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { PhotoPicker, PhotoThumb } from "@/components/app/device-photo";
+import { useDetail, writeDetail } from "@/lib/device-details";
+import { can } from "@/lib/cloud-map";
 
 type Search = { filtro?: "baixo" };
 
@@ -119,6 +122,7 @@ function Products() {
             return (
               <button key={p.id} onClick={() => setEditing(p)} className="block w-full text-left">
                 <Card className="flex items-center gap-3 py-3">
+                  <ProductThumb id={p.id} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{p.name}</p>
                     <p className="text-sm text-muted-foreground tabular">
@@ -153,6 +157,12 @@ function Products() {
   );
 }
 
+function ProductThumb({ id }: { id: string }) {
+  const { userId } = useCloud();
+  const photo = useDetail(userId, `product:${id}`);
+  return photo ? <PhotoThumb value={photo} className="size-12" /> : null;
+}
+
 function ProductDrawer({
   open,
   product,
@@ -164,23 +174,34 @@ function ProductDrawer({
 }) {
   const [form, setForm] = useState<Omit<Product, "id">>(product ?? blank);
   const [restock, setRestock] = useState(0);
+  const { userId, member } = useCloud();
+  const oldPhoto = useDetail(userId, `product:${product?.id ?? "new"}`);
+  const [photoEdit, setPhotoEdit] = useState<{ value: string | null } | null>(null);
+  const [saving, setSaving] = useState(false);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
       const data = { ...form, name: form.name.trim(), stock: form.stock + restock };
       validateProduct(data);
+      const id = product?.id ?? newId();
+      if (photoEdit) {
+        if (!userId || !can(member, "produtos")) throw new LedgerError("Sem permissão para guardar fotografia.");
+        await writeDetail(userId, `product:${id}`, photoEdit.value);
+      }
       updateLedger((s) => ({
         ...s,
         products: product
           ? s.products.map((p) => (p.id === product.id ? { ...data, id: p.id } : p))
-          : [...s.products, { ...data, id: newId() }],
+          : [...s.products, { ...data, id }],
       }));
       toast.success(product ? "Produto actualizado" : "Produto adicionado");
       onClose();
     } catch (e) {
       toast.error(e instanceof LedgerError ? e.message : "Não foi possível guardar.");
-    }
+    } finally { setSaving(false); }
   };
 
   const remove = () => {
@@ -192,13 +213,14 @@ function ProductDrawer({
   };
 
   return (
-    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
+    <Drawer open={open} dismissible={!saving} onOpenChange={(o) => !o && !saving && onClose()}>
       <DrawerContent className="mx-auto max-h-[92dvh] max-w-md">
         <DrawerHeader className="text-left">
           <DrawerTitle>{product ? "Editar produto" : "Novo produto"}</DrawerTitle>
           <DrawerDescription>Preços em Kwanzas.</DrawerDescription>
         </DrawerHeader>
         <div className="space-y-4 overflow-y-auto px-4">
+          {can(member, "produtos") && <PhotoPicker value={photoEdit ? photoEdit.value : oldPhoto} disabled={saving} onChange={value => setPhotoEdit({ value })} />}
           <Field label="Nome" htmlFor="p-name">
             <Input
               id="p-name"
@@ -252,11 +274,11 @@ function ProductDrawer({
           )}
         </div>
         <DrawerFooter>
-          <Button variant="hero" size="xl" onClick={save}>
-            Guardar
+          <Button variant="hero" size="xl" disabled={saving} onClick={() => void save()}>
+            {saving ? "A guardar…" : "Guardar"}
           </Button>
           {product && (
-            <Button variant="ghost" className="text-destructive" onClick={remove}>
+            <Button variant="ghost" className="text-destructive" disabled={saving} onClick={remove}>
               <Trash2 /> Apagar produto
             </Button>
           )}
