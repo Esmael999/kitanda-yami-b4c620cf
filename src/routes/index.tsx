@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import comerciante from "@/assets/comerciante.png";
-import { useLedger, updateLedger } from "@/lib/store";
+import { useCloud, useLedger, updateLedger } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { useDetail } from "@/lib/device-details";
+import { paymentLabel } from "@/lib/payment-method";
 import {
   addDays,
   debtors,
@@ -35,6 +37,13 @@ export const Route = createFileRoute("/")({
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? "greet.morning" : h < 19 ? "greet.afternoon" : "greet.evening";
+}
+
+function PaymentNote({ id }: { id: string }) {
+  const { userId } = useCloud();
+  const method = useDetail(userId, `payment:${id}`);
+  const label = paymentLabel(method);
+  return label ? <p className="text-xs text-muted-foreground">{label}</p> : null;
 }
 
 function Home() {
@@ -202,6 +211,7 @@ function Home() {
                     <p className={fiado ? "text-xs text-debt" : "text-xs text-primary"}>
                       {fiado ? "Kilapé" : "Pago"}
                     </p>
+                    <PaymentNote id={s.id} />
                   </div>
                 </div>
               );

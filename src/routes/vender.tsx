@@ -13,10 +13,12 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { EmptyState, Field, MoneyInput, PageHeader, whatsappLink } from "@/components/app/ui";
-import { updateLedger, useLedger } from "@/lib/store";
+import { updateLedger, useCloud, useLedger } from "@/lib/store";
 import { cartTotal, formatKz, LedgerError, newId, receiptText, recordSale, type ReceiptInfo } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { PAYMENT_METHODS, recordedMethod, type PaymentMethod } from "@/lib/payment-method";
+import { writeDetail } from "@/lib/device-details";
 
 export const Route = createFileRoute("/vender")({
   head: () => ({
@@ -179,6 +181,9 @@ function CheckoutDrawer({
   onDone: () => void;
 }) {
   const state = useLedger();
+  const { userId } = useCloud();
+  const [method, setMethod] = useState<PaymentMethod | "">("");
+  const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<"pronto" | "fiado">("pronto");
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
@@ -187,9 +192,13 @@ function CheckoutDrawer({
   const [upfront, setUpfront] = useState(0);
   const [receipt, setReceipt] = useState<{ info: ReceiptInfo; phone: string } | null>(null);
 
-  const confirm = () => {
+  const confirm = async () => {
+    if (saving) return;
+    const selected = recordedMethod(method, mode === "pronto" ? total : upfront);
+    setSaving(true);
     try {
       let cid = customerId;
+      let saleId = "";
       updateLedger((s) => {
         let next = s;
         if (addingCustomer && newName.trim()) {
@@ -199,13 +208,19 @@ function CheckoutDrawer({
             customers: [...next.customers, { id: cid, name: newName.trim(), phone: "", createdAt: new Date().toISOString() }],
           };
         }
-        return recordSale(next, {
+        const updated = recordSale(next, {
           items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
           mode,
           customerId: cid,
           upfront: mode === "fiado" ? upfront : undefined,
         });
+        saleId = updated.sales[0]?.id ?? "";
+        return updated;
       });
+      if (selected && userId && saleId) {
+        try { await writeDetail(userId, `payment:${saleId}`, selected); }
+        catch { toast.warning("Venda registada, mas não foi possível guardar o método neste dispositivo."); }
+      }
       toast.success(mode === "fiado" ? `Venda fiada de ${formatKz(total - upfront)} registada` : `Venda de ${formatKz(total)} registada`);
       const cust = cid ? state.customers.find((c) => c.id === cid) : null;
       setReceipt({
@@ -217,13 +232,14 @@ function CheckoutDrawer({
           lines: lines.map((l) => ({ name: l.name, qty: l.qty, price: l.price })),
           total,
           mode,
-          given: mode === "pronto" ? given : 0,
+          given: mode === "pronto" && (!selected || selected === "cash") ? given : 0,
+          paymentMethod: selected,
           upfront: mode === "fiado" ? upfront : 0,
         },
       });
     } catch (e) {
       toast.error(e instanceof LedgerError ? e.message : "Não foi possível registar.");
-    }
+    } finally { setSaving(false); }
   };
 
   const changeDue = given - total;
@@ -254,7 +270,7 @@ function CheckoutDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
+    <Drawer open={open} dismissible={!saving} onOpenChange={(o) => !o && !saving && onClose()}>
       <DrawerContent className="mx-auto max-h-[92dvh] max-w-md">
         <DrawerHeader className="text-left">
           <DrawerTitle className="text-2xl">{formatKz(total)}</DrawerTitle>
@@ -283,7 +299,13 @@ function CheckoutDrawer({
             ))}
           </div>
 
-          {mode === "pronto" && (
+          {(mode === "pronto" || upfront > 0) && <Field label="Método de pagamento (opcional)" htmlFor="payment-method" hint="Apenas registo de como recebeu o dinheiro. Nesta versão de teste, guardado neste dispositivo.">
+            <select id="payment-method" value={method} onChange={e => setMethod(e.target.value as PaymentMethod | "")} className="h-12 w-full rounded-xl border bg-card px-3 text-sm">
+              <option value="">Não indicado</option>
+              {PAYMENT_METHODS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+            </select>
+          </Field>}
+          {mode === "pronto" && (method === "" || method === "cash") && (
             <Field label="Valor entregue pelo cliente (opcional)" htmlFor="given">
               <MoneyInput id="given" value={given} onChange={setGiven} />
               {given > 0 && (
@@ -340,7 +362,7 @@ function CheckoutDrawer({
         </div>
 
         <DrawerFooter>
-          <Button variant={mode === "fiado" ? "debt" : "hero"} size="xl" onClick={confirm}>
+          <Button variant={mode === "fiado" ? "debt" : "hero"} size="xl" disabled={saving} onClick={() => void confirm()}>
             <Check /> {mode === "fiado" ? "Registar fiado" : "Confirmar venda"}
           </Button>
         </DrawerFooter>
