@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, CloudUpload, Download, Loader2, LogOut, Trash2, Upload, UserRound } from "lucide-react";
+import { ChevronRight, CloudUpload, Download, Loader2, LogOut, Plus, Store, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,12 +43,13 @@ function SettingsPage() {
   const profilePhoto = useDetail(userId, "business-photo");
   const customCategory = useDetail(userId, "business-category");
   const [category, setCategory] = useState("");
+  const [createBusinessOpen, setCreateBusinessOpen] = useState(false);
   const [detailsBusy, setDetailsBusy] = useState(false);
   const saveDetail = async (key: string, value: string | null) => {
-    if (!userId || member?.role !== "owner" || !member.active || detailsBusy) return;
+    if (!userId || member?.role !== "owner" || !member.active || detailsBusy) return false;
     setDetailsBusy(true);
-    try { await writeDetail(userId, key, value); toast.success("Guardado neste dispositivo"); }
-    catch { toast.error("Não foi possível guardar neste dispositivo."); }
+    try { await writeDetail(userId, key, value); toast.success("Guardado neste dispositivo"); return true; }
+    catch { toast.error("Não foi possível guardar neste dispositivo."); return false; }
     finally { setDetailsBusy(false); }
   };
   const [changingType, setChangingType] = useState(false);
@@ -161,11 +162,10 @@ function SettingsPage() {
           {customCategory && <p className="rounded-xl bg-secondary p-3 text-sm">Categoria personalizada: <strong>{customCategory}</strong></p>}
           <BusinessPicker value={pendingType ?? member.businessType ?? "cantina"} onChange={setPendingType} />
           <Button variant="hero" className="w-full" disabled={changingType || !pendingType || pendingType === member.businessType} onClick={() => void saveType()}>{changingType ? "A guardar…" : t("action.save")}</Button>
-          <div className="border-t pt-3 space-y-2">
-            <Field label="Criar o meu tipo de negócio" htmlFor="custom-category" hint="A categoria personalizada fica guardada neste dispositivo.">
-              <Input id="custom-category" maxLength={80} value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex.: Oficina de reparação" />
-            </Field>
-            <Button variant="soft" className="w-full" disabled={!category.trim() || detailsBusy} onClick={() => void saveDetail("business-category", category.trim())}>Guardar categoria personalizada</Button>
+          <div className="space-y-2 border-t pt-3">
+            <Button variant="soft" size="xl" className="w-full justify-start" disabled={detailsBusy} onClick={() => { setCategory(""); setCreateBusinessOpen(true); }}>
+              <Plus /> Criar novo negócio <ChevronRight className="ml-auto" />
+            </Button>
             {customCategory && <Button variant="ghost" className="w-full" disabled={detailsBusy} onClick={() => void saveDetail("business-category", null)}>Usar apenas categoria padrão</Button>}
           </div>
         </Card>}
@@ -217,6 +217,40 @@ function SettingsPage() {
           </Button>
         </section>
       </div>
+      {member?.role === "owner" && member.active && (
+        <Drawer open={createBusinessOpen} onOpenChange={(open) => { if (!detailsBusy) setCreateBusinessOpen(open); }} dismissible={!detailsBusy}>
+          <DrawerContent className="mx-auto max-h-[92dvh] max-w-md pb-safe">
+            <DrawerHeader className="px-5 pt-5 text-left sm:text-left">
+              <span className="mb-3 grid size-12 place-items-center rounded-2xl bg-accent text-primary"><Store className="size-6" /></span>
+              <DrawerTitle className="text-xl">Criar novo negócio</DrawerTitle>
+              <DrawerDescription>Personalize o tipo de actividade do seu negócio. Os produtos, vendas e dívidas actuais mantêm-se.</DrawerDescription>
+            </DrawerHeader>
+            <form className="min-h-0 overflow-y-auto" onSubmit={async (e) => {
+              e.preventDefault();
+              const name = category.trim();
+              if (!name || detailsBusy) return;
+              if (await saveDetail("business-category", name)) {
+                setCategory("");
+                setCreateBusinessOpen(false);
+              }
+            }}>
+              <div className="px-5">
+                <Card className="space-y-3">
+                  <Field label="Tipo de negócio" htmlFor="custom-category" hint="Esta escolha fica guardada neste dispositivo.">
+                    <Input id="custom-category" required maxLength={80} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ex.: Barbearia, oficina ou salão" className="h-12 rounded-xl text-base" disabled={detailsBusy} />
+                  </Field>
+                </Card>
+              </div>
+              <DrawerFooter className="px-5 pb-5">
+                <Button type="submit" variant="hero" size="xl" className="w-full" disabled={!category.trim() || detailsBusy}>
+                  {detailsBusy ? <Loader2 className="animate-spin" /> : <Plus />} {detailsBusy ? "A guardar…" : "Criar novo negócio"}
+                </Button>
+                <Button type="button" variant="ghost" className="h-12 w-full" disabled={detailsBusy} onClick={() => setCreateBusinessOpen(false)}>Cancelar</Button>
+              </DrawerFooter>
+            </form>
+          </DrawerContent>
+        </Drawer>
+      )}
       <Drawer open={leaveOpen} onOpenChange={(open) => { if (!leaving) setLeaveOpen(open); }} dismissible={!leaving}>
         <DrawerContent className="mx-auto max-w-md pb-safe">
           <DrawerHeader className="px-5 pt-5 text-left sm:text-left">
