@@ -307,7 +307,7 @@ function CheckoutDrawer({
             ))}
           </div>
 
-          {(mode === "pronto" || upfront > 0) && <Field label="Método de pagamento (opcional)" htmlFor="payment-method" hint="Apenas registo de como recebeu o dinheiro. Nesta versão de teste, guardado neste dispositivo.">
+          {(mode === "pronto" || upfront > 0) && <Field label="Método de pagamento (opcional)" htmlFor="payment-method" hint="Regista como recebeu o dinheiro, sem efectuar cobranças. O método fica guardado neste dispositivo.">
             <select id="payment-method" value={method} onChange={e => setMethod(e.target.value as PaymentMethod | "")} className="h-12 w-full rounded-xl border bg-card px-3 text-sm">
               <option value="">Não indicado</option>
               {PAYMENT_METHODS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}

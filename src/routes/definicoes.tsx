@@ -162,7 +162,7 @@ function SettingsPage() {
           <BusinessPicker value={pendingType ?? member.businessType ?? "cantina"} onChange={setPendingType} />
           <Button variant="hero" className="w-full" disabled={changingType || !pendingType || pendingType === member.businessType} onClick={() => void saveType()}>{changingType ? "A guardar…" : t("action.save")}</Button>
           <div className="border-t pt-3 space-y-2">
-            <Field label="Criar o meu tipo de negócio" htmlFor="custom-category" hint="Personalização da versão de teste, guardada neste dispositivo. Não altera permissões.">
+            <Field label="Criar o meu tipo de negócio" htmlFor="custom-category" hint="A categoria personalizada fica guardada neste dispositivo.">
               <Input id="custom-category" maxLength={80} value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex.: Oficina de reparação" />
             </Field>
             <Button variant="soft" className="w-full" disabled={!category.trim() || detailsBusy} onClick={() => void saveDetail("business-category", category.trim())}>Guardar categoria personalizada</Button>
@@ -175,6 +175,7 @@ function SettingsPage() {
             <p className="text-sm text-muted-foreground">
               {t("settings.backupHint")}
             </p>
+            <p className="mt-2 text-xs text-muted-foreground">A cópia não inclui fotografias, categorias personalizadas ou métodos de pagamento guardados neste dispositivo.</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="soft" onClick={exportData}>

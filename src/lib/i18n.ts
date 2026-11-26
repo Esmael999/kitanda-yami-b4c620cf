@@ -47,7 +47,7 @@ const pt = {
   "account.leaving": "A terminar sessão…",
   "account.error": "Não foi possível terminar a sessão. Tente novamente.",
   "lang.title": "Língua",
-  "lang.hint": "As palavras principais mudam; o resto fica em português até ser revisto.",
+  "lang.hint": "Alguns textos podem aparecer em português.",
   "report.today": "Hoje",
   "report.week": "7 dias",
   "report.month": "30 dias",

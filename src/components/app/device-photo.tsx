@@ -53,7 +53,7 @@ export function PhotoPicker({ value, onChange, profile = false, disabled = false
         {value && <Button type="button" variant="ghost" size="sm" disabled={disabled || busy} onClick={() => onChange(null)}>Remover</Button>}
       </div>
     </div>
-    <p className="text-xs text-muted-foreground">Versão de teste: fotografia guardada apenas neste dispositivo.</p>
+    <p className="text-xs text-muted-foreground">A fotografia fica guardada neste dispositivo.</p>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </div>;
 }
