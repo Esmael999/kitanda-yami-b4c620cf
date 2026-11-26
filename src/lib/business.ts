@@ -12,16 +12,16 @@ export type BusinessInfo = {
 };
 
 export const BUSINESS_TYPES: BusinessInfo[] = [
-  { key: "zunga", name: "Zunga / bancada", examples: "Sozinha na rua ou na praça", team: false },
+  { key: "zunga", name: "Zunga / venda ambulante", examples: "Venda na rua, porta a porta ou itinerante", team: false },
   { key: "bancada", name: "Bancada na praça", examples: "Peixe, hortaliça, roupa no mercado", team: false },
-  { key: "cantina", name: "Cantina / mini-loja", examples: "Mercearia, roupa, cosméticos", team: true },
+  { key: "cantina", name: "Cantina / mercearia", examples: "Alimentos, bebidas, higiene e bens essenciais", team: true },
   { key: "miniloja", name: "Mini-loja", examples: "Roupa, cosméticos, telemóveis, peças", team: true },
   { key: "deposito", name: "Depósito de bebidas", examples: "Grades de gasosa, cerveja, água", team: true },
   { key: "comida", name: "Roulotte / venda de comida", examples: "Refeições, sandes, sumos", team: true },
 ];
 
-/** Similar kinds are merged into one choice on screen. */
-export const PICKER_TYPES = BUSINESS_TYPES.filter((b) => b.key !== "bancada" && b.key !== "miniloja");
+/** All six categories supported by the current database. */
+export const PICKER_TYPES = BUSINESS_TYPES;
 
 export const DEFAULT_BUSINESS: BusinessType = "cantina";
 
@@ -46,3 +46,10 @@ export function defaultHelperPermissions(type: string | null | undefined): Parti
   if (businessInfo(type).key === "deposito") return { ...base, produtos: true };
   return base;
 }
+
+/** Presets only grant existing server-enforced capabilities; owners can customise them. */
+export const HELPER_PRESETS: { name: string; description: string; permissions: Record<Permission, boolean> }[] = [
+  { name: "Vendedor", description: "Regista vendas e recebe pagamentos.", permissions: { vender: true, fiado: false, receber: true, produtos: false, relatorios: false } },
+  { name: "Responsável de stock", description: "Gere produtos e stock, sem aceder aos relatórios.", permissions: { vender: false, fiado: false, receber: false, produtos: true, relatorios: false } },
+  { name: "Gerente", description: "Gere vendas, kilapé, stock e relatórios; não administra a equipa.", permissions: { vender: true, fiado: true, receber: true, produtos: true, relatorios: true } },
+];

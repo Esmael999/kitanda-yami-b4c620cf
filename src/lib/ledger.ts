@@ -1,3 +1,5 @@
+import { paymentLabel, type PaymentMethod } from "./payment-method";
+
 // Pure business rules for Kitanda. All amounts are whole Kwanzas (integers).
 
 export type Product = {
@@ -340,6 +342,7 @@ export type ReceiptInfo = {
   mode: "pronto" | "fiado";
   given: number;
   upfront: number;
+  paymentMethod?: PaymentMethod | null;
 };
 
 /** Text of the sale receipt sent by WhatsApp. */
@@ -356,6 +359,7 @@ export function receiptText(r: ReceiptInfo): string {
     if (r.upfront > 0) out.push(`Entrada paga: ${formatKz(r.upfront)}`);
     out.push(`Fica a dever: ${formatKz(Math.max(0, r.total - r.upfront))}`);
   }
+  if (r.paymentMethod && (r.mode === "pronto" || r.upfront > 0)) out.push(`Método de pagamento: ${paymentLabel(r.paymentMethod)}`);
   out.push("", "Obrigado pela preferência!");
   return out.join("\n");
 }

@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import comerciante from "@/assets/comerciante.png";
-import { useLedger, updateLedger } from "@/lib/store";
+import { useCloud, useLedger, updateLedger } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { useDetail } from "@/lib/device-details";
+import { paymentLabel } from "@/lib/payment-method";
+import { PhotoThumb } from "@/components/app/device-photo";
 import {
   addDays,
   debtors,
@@ -37,8 +40,17 @@ function greeting() {
   return h < 12 ? "greet.morning" : h < 19 ? "greet.afternoon" : "greet.evening";
 }
 
+function PaymentNote({ id }: { id: string }) {
+  const { userId } = useCloud();
+  const method = useDetail(userId, `payment:${id}`);
+  const label = paymentLabel(method);
+  return label ? <p className="text-xs text-muted-foreground">{label}</p> : null;
+}
+
 function Home() {
   const state = useLedger();
+  const { userId } = useCloud();
+  const photo = useDetail(userId, "business-photo");
   const t = useT();
   const today = startOfDay(new Date());
   const stats = periodStats(state, today, addDays(today, 1));
@@ -57,8 +69,9 @@ function Home() {
     <div className="space-y-5 px-5 pt-safe">
       <div className="flex items-center justify-between">
         <Logo className="text-lg" />
-        <Link to="/definicoes" className="max-w-[55%] truncate text-sm text-muted-foreground">
-          {state.settings.businessName}
+        <Link to="/definicoes" className="flex max-w-[50%] min-w-0 items-center gap-2 text-sm text-muted-foreground">
+          <span className="truncate">{state.settings.businessName}</span>
+          <PhotoThumb value={photo} profile className="size-9" />
         </Link>
       </div>
 
@@ -202,6 +215,7 @@ function Home() {
                     <p className={fiado ? "text-xs text-debt" : "text-xs text-primary"}>
                       {fiado ? "Kilapé" : "Pago"}
                     </p>
+                    <PaymentNote id={s.id} />
                   </div>
                 </div>
               );

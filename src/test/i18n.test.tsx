@@ -4,13 +4,17 @@ import { LANGUAGES, setLang, translate } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
 
 describe("choosing the app's language", () => {
-  it("offers Portuguese, Kimbundu, Kikongo and Cokwe", () => {
-    expect(LANGUAGES.map((l) => l.name)).toEqual(["Português", "Kimbundu", "Kikongo", "Cokwe"]);
+  it("offers Portuguese and seven national languages", () => {
+    expect(LANGUAGES.map((l) => l.name)).toEqual(["Português", "Kimbundu", "Kikongo", "Cokwe", "Umbundu", "Oshikwanyama", "Olunyaneka", "Luvale"]);
   });
 
   it("uses the draft word where there is one and Portuguese where there isn't", () => {
     expect(translate("kg", "nav.debts")).toBe("Mfuka");
-    expect(translate("kmb", "nav.debts")).toBe("Dívidas");
+    expect(translate("kmb", "nav.debts")).toBe("Makongo");
+    expect(translate("umb", "action.receive")).toBe("Okutambula");
+    expect(translate("nyk", "greet.morning")).toBe("Okamene");
+    expect(translate("lue", "report.today")).toBe("Lelo");
+    expect(translate("kj", "page.reports")).toBe("Relatórios");
     expect(translate("pt", "nav.sell")).toBe("Vender");
   });
 

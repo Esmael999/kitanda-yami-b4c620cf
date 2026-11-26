@@ -9,7 +9,7 @@ import { Card, Field, PageHeader } from "@/components/app/ui";
 import { supabase } from "@/integrations/supabase/client";
 import { useCloud } from "@/lib/store";
 import { PERMISSIONS, type Permission } from "@/lib/cloud-map";
-import { defaultHelperPermissions } from "@/lib/business";
+import { defaultHelperPermissions, HELPER_PRESETS } from "@/lib/business";
 
 export const Route = createFileRoute("/equipa")({
   head: () => ({
@@ -123,6 +123,12 @@ function Team() {
             </Field>
             <Field label="Email do ajudante" htmlFor="h-email">
               <Input id="h-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="joao@exemplo.com" className="h-12 rounded-xl text-base" />
+            </Field>
+            <Field label="Perfil de acesso" htmlFor="h-preset">
+              <select id="h-preset" value="" onChange={(e) => { const preset = HELPER_PRESETS[Number(e.target.value)]; if (e.target.value !== "" && preset) setPerms({ ...preset.permissions }); }} className="h-12 w-full rounded-xl border bg-card px-3 text-sm">
+                <option value="">Escolher perfil ou personalizar abaixo</option>
+                {HELPER_PRESETS.map((p, i) => <option key={p.name} value={i}>{p.name} — {p.description}</option>)}
+              </select>
             </Field>
             <p className="text-sm font-semibold">O que pode fazer</p>
             <PermList value={perms} onChange={setPerms} />

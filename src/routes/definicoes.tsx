@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field, PageHeader } from "@/components/app/ui";
 import { signOut, useAuth } from "@/lib/auth";
-import { updateLedger, useCloud, useLedger } from "@/lib/store";
-import { initialBusinessName } from "@/lib/business";
+import { setBusinessType, updateLedger, useCloud, useLedger } from "@/lib/store";
+import { initialBusinessName, type BusinessType } from "@/lib/business";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 import { useT } from "@/lib/i18n";
+import { useThemePreference } from "@/lib/theme";
+import { PhotoPicker } from "@/components/app/device-photo";
+import { clearDetails, useDetail, writeDetail } from "@/lib/device-details";
+import { BusinessPicker } from "@/components/app/business-picker";
 import { LanguagePicker } from "@/components/app/language-picker";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
@@ -30,11 +34,32 @@ export const Route = createFileRoute("/definicoes")({
 function SettingsPage() {
   const state = useLedger();
   const t = useT();
+  const [theme, setTheme] = useThemePreference();
   const [business, setBusiness] = useState(state.settings.businessName);
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
   const auth = useAuth();
-  const { member, pending, failed } = useCloud();
+  const { member, pending, failed, userId } = useCloud();
+  const profilePhoto = useDetail(userId, "business-photo");
+  const customCategory = useDetail(userId, "business-category");
+  const [category, setCategory] = useState("");
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const saveDetail = async (key: string, value: string | null) => {
+    if (!userId || member?.role !== "owner" || !member.active || detailsBusy) return;
+    setDetailsBusy(true);
+    try { await writeDetail(userId, key, value); toast.success("Guardado neste dispositivo"); }
+    catch { toast.error("Não foi possível guardar neste dispositivo."); }
+    finally { setDetailsBusy(false); }
+  };
+  const [changingType, setChangingType] = useState(false);
+  const [pendingType, setPendingType] = useState<BusinessType | null>(null);
+  const saveType = async () => {
+    if (!pendingType || changingType || member?.role !== "owner" || !member.active) return;
+    setChangingType(true);
+    try { await setBusinessType(pendingType); setPendingType(null); toast.success("Tipo de negócio guardado"); }
+    catch { toast.error("Não foi possível guardar. Verifique a ligação à internet."); }
+    finally { setChangingType(false); }
+  };
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState(false);
@@ -63,7 +88,7 @@ function SettingsPage() {
       ...s,
       settings: { businessName: business.trim() || initialBusinessName(owner), ownerName: owner.trim() },
     }));
-    toast.success("Definições guardadas");
+    toast.success(t("settings.saved"));
   };
 
   const exportData = () => {
@@ -73,30 +98,31 @@ function SettingsPage() {
     a.download = `kitanda-copia-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast.success("Cópia de segurança descarregada");
+    toast.success(t("settings.exported"));
   };
 
   const importData = async (file: File) => {
     try {
       const data = JSON.parse(await file.text()) as LedgerState;
       if (!Array.isArray(data.products) || !Array.isArray(data.sales)) throw new Error();
-      if (!window.confirm("Substituir os dados deste telemóvel pela cópia?")) return;
+      if (!window.confirm(t("settings.restoreConfirm"))) return;
       updateLedger(() => ({ ...emptyState(), ...data }));
       setBusiness(data.settings?.businessName ?? "");
       setOwner(data.settings?.ownerName ?? "");
-      toast.success("Dados restaurados");
+      toast.success(t("settings.restored"));
     } catch {
-      toast.error("Este ficheiro não é uma cópia da Kitanda.");
+      toast.error(t("settings.invalidBackup"));
     }
   };
 
-  const wipe = () => {
-    if (!window.confirm("Apagar TODOS os dados deste telemóvel? Não dá para desfazer.")) return;
+  const wipe = async () => {
+    if (!window.confirm(t("settings.eraseConfirm"))) return;
+    try { if (userId) await clearDetails(userId); } catch { toast.error("Não foi possível apagar os dados locais adicionais."); return; }
     // Only this phone's copy: the cloud keeps everything and brings it back on the next sync.
     updateLedger(() => emptyState(), []);
     setBusiness(emptyState().settings.businessName);
     setOwner("");
-    toast.success("Todos os dados foram apagados");
+    toast.success(t("settings.erased"));
   };
 
   return (
@@ -106,12 +132,20 @@ function SettingsPage() {
         <Card>
           <LanguagePicker />
         </Card>
+        <Card className="space-y-2">
+          <p className="font-semibold">{t("settings.appearance")}</p>
+          <div role="group" aria-label={t("settings.theme")} className="grid grid-cols-2 gap-2">
+            <Button variant={theme === "dark" ? "hero" : "soft"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>{t("settings.dark")}</Button>
+            <Button variant={theme === "light" ? "hero" : "soft"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}>{t("settings.light")}</Button>
+          </div>
+        </Card>
 
         <Card className="space-y-3">
-          <Field label="Nome do negócio" htmlFor="s-business">
+          {member?.role === "owner" && member.active && <PhotoPicker profile value={profilePhoto} disabled={detailsBusy} onChange={value => void saveDetail("business-photo", value)} />}
+          <Field label={t("settings.businessName")} htmlFor="s-business">
             <Input id="s-business" value={business} onChange={(e) => setBusiness(e.target.value)} className="h-12 rounded-xl text-base" />
           </Field>
-          <Field label="O seu nome" htmlFor="s-owner" hint="Aparece na saudação do início.">
+          <Field label={t("settings.ownerName")} htmlFor="s-owner" hint={t("settings.greetingHint")}>
             <Input id="s-owner" value={owner} onChange={(e) => setOwner(e.target.value)} className="h-12 rounded-xl text-base" />
           </Field>
           <Button variant="hero" size="xl" className="w-full" onClick={save}>
@@ -119,13 +153,29 @@ function SettingsPage() {
           </Button>
         </Card>
 
+        {member?.role === "owner" && member.active && <Card className="space-y-3">
+          <div>
+            <p className="font-semibold">Tipo de negócio</p>
+            <p className="text-sm text-muted-foreground">Escolha a categoria que descreve a sua actividade. Qualquer tipo de negócio pode ter ajudantes. Os produtos, vendas e dívidas ficam como estão.</p>
+          </div>
+          {customCategory && <p className="rounded-xl bg-secondary p-3 text-sm">Categoria personalizada: <strong>{customCategory}</strong></p>}
+          <BusinessPicker value={pendingType ?? member.businessType ?? "cantina"} onChange={setPendingType} />
+          <Button variant="hero" className="w-full" disabled={changingType || !pendingType || pendingType === member.businessType} onClick={() => void saveType()}>{changingType ? "A guardar…" : t("action.save")}</Button>
+          <div className="border-t pt-3 space-y-2">
+            <Field label="Criar o meu tipo de negócio" htmlFor="custom-category" hint="A categoria personalizada fica guardada neste dispositivo.">
+              <Input id="custom-category" maxLength={80} value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex.: Oficina de reparação" />
+            </Field>
+            <Button variant="soft" className="w-full" disabled={!category.trim() || detailsBusy} onClick={() => void saveDetail("business-category", category.trim())}>Guardar categoria personalizada</Button>
+            {customCategory && <Button variant="ghost" className="w-full" disabled={detailsBusy} onClick={() => void saveDetail("business-category", null)}>Usar apenas categoria padrão</Button>}
+          </div>
+        </Card>}
         <Card className="space-y-3">
           <div>
-            <p className="font-semibold">Cópia de segurança</p>
+            <p className="font-semibold">{t("settings.backup")}</p>
             <p className="text-sm text-muted-foreground">
-              Além do que fica na sua conta, guarde uma cópia neste telemóvel de vez em quando, para
-              não perder nada se trocar de telemóvel.
+              {t("settings.backupHint")}
             </p>
+            <p className="mt-2 text-xs text-muted-foreground">A cópia não inclui fotografias, categorias personalizadas ou métodos de pagamento guardados neste dispositivo.</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="soft" onClick={exportData}>
@@ -148,7 +198,7 @@ function SettingsPage() {
           />
         </Card>
 
-        <Button variant="ghost" className="w-full text-destructive" onClick={wipe}>
+        <Button variant="ghost" className="w-full text-destructive" onClick={() => void wipe()}>
           <Trash2 /> Apagar todos os dados
         </Button>
 

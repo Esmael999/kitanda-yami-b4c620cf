@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { businessInfo, defaultHelperPermissions, initialBusinessName, teamAllowed } from "@/lib/business";
+import { businessInfo, defaultHelperPermissions, initialBusinessName, teamAllowed, HELPER_PRESETS, PICKER_TYPES } from "@/lib/business";
 
 describe("business types", () => {
   it("every merchant may invite helpers, including zunga and unknown businesses", () => {
@@ -21,4 +21,16 @@ describe("business types", () => {
     expect(defaultHelperPermissions("cantina").relatorios).toBe(false);
     expect(defaultHelperPermissions("cantina").vender).toBe(true);
   });
+});
+
+it("limits vendor and stock presets to their own capabilities", () => {
+  const [seller, stock, manager] = HELPER_PRESETS;
+  expect(seller?.permissions.relatorios).toBe(false);
+  expect(stock?.permissions.vender).toBe(false);
+  expect(stock?.permissions.produtos).toBe(true);
+  expect(manager?.permissions.relatorios).toBe(true);
+});
+
+it("exposes every business category accepted by the current backend", () => {
+  expect(PICKER_TYPES.map(b => b.key)).toEqual(["zunga", "bancada", "cantina", "miniloja", "deposito", "comida"]);
 });
