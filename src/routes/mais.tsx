@@ -4,7 +4,6 @@ import { Card, PageHeader } from "@/components/app/ui";
 import { useT } from "@/lib/i18n";
 import { useCloud } from "@/lib/store";
 import { can } from "@/lib/cloud-map";
-import { teamAllowed } from "@/lib/business";
 
 export const Route = createFileRoute("/mais")({
   head: () => ({
@@ -29,7 +28,7 @@ const items = [
 function More() {
   const t = useT();
   const { member } = useCloud();
-  const showTeam = member?.role === "owner" && teamAllowed(member.businessType);
+  const showTeam = member?.role === "owner";
   const visible = items.filter((i) => i.to !== "/relatorios" || can(member, "relatorios"));
   return (
     <div>

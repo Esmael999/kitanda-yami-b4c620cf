@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from "react";
 import { isAuthRetryableFetchError, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { initialBusinessName } from "@/lib/business";
 
 export type AuthState = {
   status: "checking" | "signed_out" | "signed_in";
@@ -105,13 +106,13 @@ export function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 }
 
-export function signUp(input: { email: string; password: string; fullName: string; businessName: string; businessType?: string }) {
+export function signUp(input: { email: string; password: string; fullName: string }) {
   return supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
       // handle_new_user() reads these to name the person and their new store.
-      data: { full_name: input.fullName.trim(), business_name: input.businessName.trim(), business_type: input.businessType ?? "cantina" },
+      data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName) },
       ...(typeof window !== "undefined" ? { emailRedirectTo: window.location.origin } : {}),
     },
   });

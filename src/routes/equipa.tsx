@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Card, Field, PageHeader } from "@/components/app/ui";
 import { supabase } from "@/integrations/supabase/client";
 import { useCloud } from "@/lib/store";
 import { PERMISSIONS, type Permission } from "@/lib/cloud-map";
-import { businessInfo, defaultHelperPermissions, teamAllowed } from "@/lib/business";
+import { defaultHelperPermissions } from "@/lib/business";
 
 export const Route = createFileRoute("/equipa")({
   head: () => ({
@@ -71,23 +71,6 @@ function Team() {
       <div>
         <PageHeader title="Equipa" back="/mais" />
         <Card className="mx-5 text-sm">Só o dono da loja pode gerir a equipa.</Card>
-      </div>
-    );
-  }
-
-  if (!teamAllowed(type)) {
-    return (
-      <div>
-        <PageHeader title="Equipa" back="/mais" />
-        <Card className="mx-5 space-y-2 text-sm">
-          <p>
-            O seu negócio está marcado como <strong>{businessInfo(type).name}</strong>, onde se atende sozinha.
-          </p>
-          <p className="text-muted-foreground">Se passou a ter ajudantes, mude o tipo de negócio nas Definições.</p>
-          <Link to="/definicoes" className="font-semibold text-primary">
-            Ir às Definições
-          </Link>
-        </Card>
       </div>
     );
   }

@@ -1,16 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Loader2, MailCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import { authMessage, signIn, signInWithGoogle, signUp, useAuth } from "@/lib/auth";
-import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
-import { BusinessPicker } from "@/components/app/business-picker";
-import type { BusinessType } from "@/lib/business";
 
 export const Route = createFileRoute("/entrar")({
   head: () => ({
@@ -57,22 +54,21 @@ function SignIn() {
   const auth = useAuth();
   const t = useT();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up">("up");
+  const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [businessType, setBusinessType] = useState<BusinessType>("cantina");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  if (auth.status === "signed_in") return <Navigate to="/" replace />;
+  if (auth.status === "signed_in") return <Navigate to="/vender" replace />;
 
   const switchMode = (next: "in" | "up") => {
     setMode(next);
     setError(null);
     setSent(false);
+    setPassword("");
   };
 
   const submit = async (e: FormEvent) => {
@@ -88,7 +84,7 @@ function SignIn() {
     setBusy(true);
     try {
       if (mode === "up") {
-        const { data, error: err } = await signUp({ email, password, fullName, businessName, businessType });
+        const { data, error: err } = await signUp({ email, password, fullName });
         if (err) throw err;
         // Email confirmation switched on: no session yet, the merchant must click the link.
         if (!data.session) {
@@ -99,7 +95,7 @@ function SignIn() {
         const { error: err } = await signIn(email, password);
         if (err) throw err;
       }
-      await navigate({ to: "/" });
+      await navigate({ to: "/vender" });
     } catch (err) {
       setError(authMessage(err as { message?: string }));
     } finally {
@@ -121,19 +117,25 @@ function SignIn() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col justify-center gap-5 px-5 pt-safe pb-8">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-5 pt-safe pb-8">
+      {mode === "up" && !sent && (
+        <Button type="button" variant="ghost" size="icon" aria-label="Voltar a entrar" onClick={() => switchMode("in")} className="size-11 self-start">
+          <ArrowLeft />
+        </Button>
+      )}
       <div className="flex justify-center">
         <Logo className="text-2xl" />
       </div>
 
       <div>
         <h1 className="mt-1 text-3xl leading-tight font-extrabold">
-          {mode === "up" ? "Comece a registar as suas vendas" : "Bem-vinda de volta"}
+          {mode === "up" ? t("auth.signUp") : t("auth.signIn")}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "up"
-            ? "A sua conta cria logo a sua própria loja. Pode mudar o nome depois."
-            : "Entre para ver as vendas, o stock e quem lhe deve."}
+          {mode === "up" ? "Já tem uma conta? " : "Não tem uma conta? "}
+          <Button type="button" variant="link" className="h-auto px-0 py-1 text-sm" onClick={() => switchMode(mode === "up" ? "in" : "up")}>
+            {mode === "up" ? t("auth.signIn") : t("auth.signUp")}
+          </Button>
         </p>
       </div>
 
@@ -153,28 +155,13 @@ function SignIn() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-secondary p-1">
-            {(["up", "in"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMode(m)}
-                className={cn(
-                  "cursor-pointer rounded-xl py-2.5 text-sm font-semibold transition-colors",
-                  mode === m ? "bg-surface text-foreground shadow-card" : "text-muted-foreground",
-                )}
-              >
-                {m === "up" ? t("auth.signUp") : t("auth.signIn")}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={submit} className="space-y-3">
+          <form onSubmit={submit} className="space-y-4">
             {mode === "up" && (
               <div className="grid gap-3">
                 <Field label="O seu nome" htmlFor="a-name">
                   <Input
                     id="a-name"
+                    required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Celma Eduardo"
@@ -182,20 +169,6 @@ function SignIn() {
                     className="h-12 rounded-xl text-base"
                   />
                 </Field>
-                <Field label="Nome do negócio" htmlFor="a-business">
-                  <Input
-                    id="a-business"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Cantina da Celma"
-                    autoComplete="organization"
-                    className="h-12 rounded-xl text-base"
-                  />
-                </Field>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Que tipo de negócio tem?</p>
-                  <BusinessPicker value={businessType} onChange={setBusinessType} />
-                </div>
               </div>
             )}
 
@@ -221,6 +194,7 @@ function SignIn() {
                 id="a-password"
                 type="password"
                 required
+                minLength={mode === "up" ? 6 : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -241,7 +215,7 @@ function SignIn() {
               ) : (
                 <ArrowRight />
               )}
-              {mode === "up" ? "Criar a minha conta" : "Entrar"}
+              {mode === "up" ? t("auth.signUp") : t("auth.signIn")}
             </Button>
           </form>
 
@@ -253,11 +227,6 @@ function SignIn() {
             <GoogleMark /> Continuar com Google
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
-            {mode === "up"
-              ? "Ao criar conta fica com uma loja só sua, que só você vê."
-              : "Esqueceu-se da palavra-passe? Peça ajuda a quem lhe deu a app."}
-          </p>
         </>
       )}
 

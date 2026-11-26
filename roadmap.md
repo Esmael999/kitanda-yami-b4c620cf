@@ -14,3 +14,4 @@
 - [ ] Produtos de teste
 - [x] Tipo de negócio no registo + convidar ajudante e escolher o que cada um pode fazer
 - [x] Juntar tipos de negócio parecidos, login mais simples, relatório por período, pesquisa de cliente, Kilapé, tirar cartão de instalar
+- [x] Entrada sem questionários, nome da loja automático e equipa opcional para qualquer comerciante

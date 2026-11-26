@@ -26,12 +26,17 @@ export const PICKER_TYPES = BUSINESS_TYPES.filter((b) => b.key !== "bancada" && 
 export const DEFAULT_BUSINESS: BusinessType = "cantina";
 
 export function businessInfo(type: string | null | undefined): BusinessInfo {
-  return BUSINESS_TYPES.find((b) => b.key === type) ?? BUSINESS_TYPES.find((b) => b.key === DEFAULT_BUSINESS)!;
+  return BUSINESS_TYPES.find((b) => b.key === type) ?? { key: DEFAULT_BUSINESS, name: "Cantina / mini-loja", examples: "Mercearia, roupa, cosméticos", team: true };
 }
 
-/** Solo businesses have no team screen; the others can invite helpers. */
-export function teamAllowed(type: string | null | undefined): boolean {
-  return businessInfo(type).team;
+/** Teams are optional for every merchant, regardless of the legacy category. */
+export function teamAllowed(_type: string | null | undefined): boolean {
+  return true;
+}
+
+export function initialBusinessName(fullName: string): string {
+  const name = fullName.trim();
+  return name ? `Loja de ${name}` : "A minha loja";
 }
 
 /** What a new helper may do by default: sell, never see profits or manage stock. */

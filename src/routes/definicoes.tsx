@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field, PageHeader } from "@/components/app/ui";
 import { signOut, useAuth } from "@/lib/auth";
-import { setBusinessType, updateLedger, useCloud, useLedger } from "@/lib/store";
-import { BusinessPicker } from "@/components/app/business-picker";
+import { updateLedger, useCloud, useLedger } from "@/lib/store";
+import { initialBusinessName } from "@/lib/business";
 import { emptyState, type LedgerState } from "@/lib/ledger";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
@@ -38,14 +38,6 @@ function SettingsPage() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState(false);
-  const changeType = async (type: string) => {
-    try {
-      await setBusinessType(type);
-      toast.success("Tipo de negócio guardado");
-    } catch {
-      toast.error("Precisa de internet para mudar o tipo de negócio.");
-    }
-  };
   const navigate = useNavigate();
 
   const leave = async () => {
@@ -69,7 +61,7 @@ function SettingsPage() {
   const save = () => {
     updateLedger((s) => ({
       ...s,
-      settings: { businessName: business.trim() || "A minha cantina", ownerName: owner.trim() },
+      settings: { businessName: business.trim() || initialBusinessName(owner), ownerName: owner.trim() },
     }));
     toast.success("Definições guardadas");
   };
@@ -126,16 +118,6 @@ function SettingsPage() {
             {t("action.save")}
           </Button>
         </Card>
-
-        {member?.role === "owner" && (
-          <Card className="space-y-3">
-            <div>
-              <p className="font-semibold">Tipo de negócio</p>
-              <p className="text-sm text-muted-foreground">Os negócios com ajudantes ganham o ecrã Equipa.</p>
-            </div>
-            <BusinessPicker value={member.businessType ?? "cantina"} onChange={(t) => void changeType(t)} />
-          </Card>
-        )}
 
         <Card className="space-y-3">
           <div>
