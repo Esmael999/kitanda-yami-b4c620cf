@@ -9,6 +9,7 @@ create table if not exists kitanda_private.team_invites (
   contact text not null,
   kind text not null check (kind in ('email','phone')),
   name text not null,
+  job_title text not null default 'Ajudante' check (length(btrim(job_title)) between 1 and 80),
   permissions jsonb not null,
   token_hash bytea not null unique,
   expires_at timestamptz not null,
@@ -17,9 +18,10 @@ create table if not exists kitanda_private.team_invites (
   unique(establishment_id, contact)
 );
 alter table kitanda_private.team_invites enable row level security;
+alter table public.employees add column if not exists job_title text not null default 'Ajudante' check (length(btrim(job_title)) between 1 and 80);
 revoke all on kitanda_private.team_invites from public, anon, authenticated;
 
-create or replace function public.create_team_invite(_contact text,_kind text,_name text,_permissions jsonb)
+create or replace function public.create_team_invite(_contact text,_kind text,_name text,_permissions jsonb,_job_title text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   est uuid := public.current_establishment_id();
@@ -33,15 +35,16 @@ begin
      (_kind='email' and (contact_value !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$' or length(contact_value)>254)) or
      (_kind='phone' and contact_value !~ '^[+]2449[0-9]{8}$') then raise exception 'Contacto inválido.'; end if;
   if length(btrim(coalesce(_name,''))) not between 1 and 100 then raise exception 'Nome inválido.'; end if;
+  if length(btrim(coalesce(_job_title,''))) not between 1 and 80 then raise exception 'Função inválida.'; end if;
   if jsonb_typeof(coalesce(_permissions,'{}'::jsonb)) <> 'object' then raise exception 'Permissões inválidas.'; end if;
   select jsonb_object_agg(k, coalesce((_permissions->k) = 'true'::jsonb,false)) into perms
     from unnest(array['vender','fiado','receber','produtos','relatorios']) k;
   if exists(select 1 from public.employees e where e.establishment_id=est and lower(e.email)=contact_value) then
     raise exception 'Já existe uma associação ou convite anterior para este contacto.';
   end if;
-  insert into kitanda_private.team_invites(establishment_id,contact,kind,name,permissions,token_hash,expires_at)
-  values(est,contact_value,_kind,btrim(_name),perms,sha256(convert_to(token,'UTF8')),expiry)
-  on conflict(establishment_id,contact) do update set kind=excluded.kind,name=excluded.name,permissions=excluded.permissions,
+  insert into kitanda_private.team_invites(establishment_id,contact,kind,name,job_title,permissions,token_hash,expires_at)
+  values(est,contact_value,_kind,btrim(_name),btrim(_job_title),perms,sha256(convert_to(token,'UTF8')),expiry)
+  on conflict(establishment_id,contact) do update set kind=excluded.kind,name=excluded.name,job_title=excluded.job_title,permissions=excluded.permissions,
     token_hash=excluded.token_hash,expires_at=excluded.expires_at
     where team_invites.used_at is null;
   if not found then raise exception 'Este convite já foi utilizado.'; end if;
@@ -53,13 +56,13 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare est uuid := public.current_establishment_id();
 begin
   if auth.uid() is null or est is null or not public.is_owner() then raise exception 'Sem permissão.' using errcode='42501'; end if;
-  return coalesce((select jsonb_agg(jsonb_build_object('id',id,'contact',contact,'kind',kind,'name',name,'permissions',permissions,'expires_at',expires_at,'used_at',used_at) order by expires_at desc)
+  return coalesce((select jsonb_agg(jsonb_build_object('id',id,'contact',contact,'kind',kind,'name',name,'job_title',job_title,'permissions',permissions,'expires_at',expires_at,'used_at',used_at) order by expires_at desc)
      from kitanda_private.team_invites where establishment_id=est),'[]'::jsonb);
 end $$;
 
 create or replace function public.inspect_team_invite(_token text)
 returns jsonb language sql stable security definer set search_path='' as $$
-  select jsonb_build_object('contact',i.contact,'kind',i.kind,'name',i.name,'shop',e.name)
+  select jsonb_build_object('contact',i.contact,'kind',i.kind,'name',i.name,'job_title',i.job_title,'shop',e.name)
   from kitanda_private.team_invites i join public.establishments e on e.id=i.establishment_id
   where length(_token)=64 and i.token_hash=sha256(convert_to(_token,'UTF8')) and i.used_at is null and i.expires_at>now()
 $$;
@@ -114,14 +117,42 @@ begin
     (inv.kind='phone' and ltrim(u.phone,'+')=ltrim(inv.contact,'+') and u.phone_confirmed_at is not null),false)
   then raise exception 'Confirme o contacto indicado no convite.' using errcode='42501'; end if;
   if exists(select 1 from public.employees where user_id=u.id) then raise exception 'Esta conta já pertence a um negócio.'; end if;
-  insert into public.employees(establishment_id,user_id,email,name,role,permissions,active)
-  values(inv.establishment_id,u.id,inv.contact,inv.name,'employee',inv.permissions,true);
+  insert into public.employees(establishment_id,user_id,email,name,role,job_title,permissions,active)
+  values(inv.establishment_id,u.id,inv.contact,inv.name,'employee',inv.job_title,inv.permissions,true);
   insert into public.profiles(id,establishment_id,full_name) values(u.id,inv.establishment_id,inv.name)
     on conflict(id) do update set establishment_id=excluded.establishment_id,full_name=excluded.full_name;
   update kitanda_private.team_invites set used_at=now(),used_by=u.id where id=inv.id;
 end $$;
 
-revoke all on function public.create_team_invite(text,text,text,jsonb), public.list_team_invites(), public.redeem_team_invite(text), public.inspect_team_invite(text) from public,anon,authenticated;
-grant execute on function public.create_team_invite(text,text,text,jsonb), public.list_team_invites(), public.redeem_team_invite(text) to authenticated;
+revoke all on function public.create_team_invite(text,text,text,jsonb,text), public.list_team_invites(), public.redeem_team_invite(text), public.inspect_team_invite(text) from public,anon,authenticated;
+grant execute on function public.create_team_invite(text,text,text,jsonb,text), public.list_team_invites(), public.redeem_team_invite(text) to authenticated;
 grant execute on function public.inspect_team_invite(text) to anon,authenticated;
+-- Read-only activity API. Attribution uses server-authenticated actor IDs in existing ledger rows.
+create or replace function public.team_activity(_employee_id uuid, _days integer default 7)
+returns jsonb language plpgsql stable security invoker set search_path='' as $
+declare est uuid := public.current_establishment_id(); actor uuid; since timestamptz;
+begin
+  if auth.uid() is null or est is null or not public.is_owner() then raise exception 'Sem permissão.' using errcode='42501'; end if;
+  if _days is null or _days not in (1,7,30) then raise exception 'Período inválido.'; end if;
+  select user_id into actor from public.employees where id=_employee_id and establishment_id=est and role='employee';
+  if not found or actor is null then raise exception 'Ajudante indisponível.'; end if;
+  since := now() - make_interval(days => _days);
+  return jsonb_build_object(
+    'sales_count',(select count(*) from public.sales where establishment_id=est and seller_id=actor and created_at>=since),
+    'sales_total',(select coalesce(sum(total),0) from public.sales where establishment_id=est and seller_id=actor and created_at>=since),
+    'payments_count',(select count(*) from public.payments where establishment_id=est and received_by=actor and created_at>=since),
+    'payments_total',(select coalesce(sum(amount),0) from public.payments where establishment_id=est and received_by=actor and created_at>=since),
+    'stock_count',(select count(*) from public.stock_movements where establishment_id=est and created_by=actor and sale_id is null and created_at>=since),
+    'events',coalesce((select jsonb_agg(to_jsonb(q) order by q.at desc,q.id) from (
+      select * from (
+        select id,created_at as at,'sale'::text as kind,total as amount,null::integer as delta,null::text as product from public.sales where establishment_id=est and seller_id=actor and created_at>=since
+        union all
+        select id,created_at,'payment',amount,null::integer,null::text from public.payments where establishment_id=est and received_by=actor and created_at>=since
+        union all
+        select m.id,m.created_at,'stock',null::integer,m.delta,p.name from public.stock_movements m left join public.products p on p.id=m.product_id and p.establishment_id=est where m.establishment_id=est and m.created_by=actor and m.sale_id is null and m.created_at>=since
+      ) events order by at desc,id limit 100
+    ) q),'[]'::jsonb));
+end $;
+revoke all on function public.team_activity(uuid,integer) from public,anon,authenticated;
+grant execute on function public.team_activity(uuid,integer) to authenticated;
 commit;
