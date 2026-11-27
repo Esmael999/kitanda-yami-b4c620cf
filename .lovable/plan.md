@@ -39,3 +39,14 @@ Página "Convite para a Loja de Celma Eduardo":
 - Aviso sincero: a tradução será um rascunho feito por mim. O kimbundu tem variantes e poucos exemplos escritos; deve ser revista por alguém que fale bem a língua antes de mostrar a clientes.
 - Entrego também uma lista com todas as frases (português ↔ kimbundu) para essa pessoa corrigir facilmente.
 - Técnico: mover textos fixos dos ecrãs para chaves em `src/lib/i18n.ts`; teste garante que nenhuma chave fica vazia em kimbundu.
+
+# Entrar e criar conta com telefone + palavra-passe
+- Nos ecrãs Entrar e Criar conta: escolha simples "Telefone" ou "Email" (telefone primeiro).
+- Telefone em formato angolano (+244, 9 dígitos), com palavra-passe criada pela própria pessoa.
+- O convite do ajudante passa a aceitar telefone em vez de email; a conta liga-se à loja pelo número.
+- Sem custos de SMS: o número funciona como nome de utilizador (não é enviado código).
+- Limitação sincera: sem email, recuperar a palavra-passe esquecida terá de ser feito pela dona da loja (botão "repor palavra-passe do ajudante") ou com um email adicionado depois.
+- Técnico: o número é guardado de forma normalizada e convertido internamente numa identificação de conta; confirmação automática só para contas por telefone; `handle_new_user()` e convites passam a reconhecer telefone.
+
+# Prompt pronto a usar
+"Na Kitanda Yami, nos ecrãs Entrar e Criar conta, acrescenta a opção de entrar com número de telefone angolano (+244) e palavra-passe, além do email, sem mudar o design. No ecrã Equipa, cria um convite com link único (válido 7 dias, uso único) que a dona envia ao ajudante por WhatsApp, SMS ou copiando o link. O link abre uma página que explica ao ajudante como criar a própria conta com o telefone ou email já preenchido e definir a sua palavra-passe, ligando-o logo à loja com as permissões escolhidas. Mostra 'à espera' ou 'já entrou' e permite reenviar o convite. Traduz todos os ecrãs para kimbundu como rascunho a rever por um falante."
