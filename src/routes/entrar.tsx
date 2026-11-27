@@ -167,7 +167,7 @@ function SignIn() {
         <p className="font-semibold">{inviteLoading ? "A verificar convite…" : "Convite indisponível"}</p>
         {!inviteLoading && <><p className="text-sm text-muted-foreground">Este convite pode ter expirado, já ter sido utilizado ou não estar disponível. Peça um novo link à dona da loja.</p><Button variant="soft" className="w-full" onClick={() => window.location.assign("/entrar")}>Voltar a entrar</Button></>}
       </Card> : <>
-      {invitation && <Card className="space-y-2"><p className="font-semibold">Convite para {invitation.shop}</p><p className="text-sm text-muted-foreground">Crie a sua conta com o contacto indicado e uma palavra-passe só sua. Confirme o contacto e aceite o convite para entrar na loja com as permissões atribuídas.</p></Card>}
+      {invitation && <Card className="space-y-2"><p className="font-semibold">Convite para {invitation.shop}</p><p className="text-sm font-medium text-primary">Função: {invitation.job_title}</p><p className="text-sm text-muted-foreground">Crie a sua conta com o contacto indicado e uma palavra-passe só sua. Confirme o contacto e aceite o convite para entrar na loja com as permissões atribuídas.</p></Card>}
       {convite && auth.status === "signed_in" ? <Card className="space-y-3">
         <p className="font-semibold">Aceitar convite</p><p className="text-sm text-muted-foreground">Use a conta confirmada com o contacto indicado no convite. Os negócios existentes não são transferidos.</p>
         {error && <p role="alert" className="text-sm text-debt">{error}</p>}
