@@ -50,3 +50,9 @@ Página "Convite para a Loja de Celma Eduardo":
 
 # Prompt pronto a usar
 "Na Kitanda Yami, nos ecrãs Entrar e Criar conta, acrescenta a opção de entrar com número de telefone angolano (+244) e palavra-passe, além do email, sem mudar o design. No ecrã Equipa, cria um convite com link único (válido 7 dias, uso único) que a dona envia ao ajudante por WhatsApp, SMS ou copiando o link. O link abre uma página que explica ao ajudante como criar a própria conta com o telefone ou email já preenchido e definir a sua palavra-passe, ligando-o logo à loja com as permissões escolhidas. Mostra 'à espera' ou 'já entrou' e permite reenviar o convite. Traduz todos os ecrãs para kimbundu como rascunho a rever por um falante."
+
+# Dicionário completo do app
+- Recolher todas as palavras e frases de todos os ecrãs, botões, avisos, erros e comprovativos.
+- Entregar um ficheiro Excel (e PDF) em Ficheiros com colunas: Ecrã · Português · Kimbundu · Kikongo · Cokwe · Observações.
+- Linhas já traduzidas vêm preenchidas (marcadas "rascunho"); as restantes ficam vazias para o revisor completar.
+- Depois de revisto, o ficheiro pode ser devolvido e eu aplico as traduções no app.
