@@ -32,3 +32,10 @@ Página "Convite para a Loja de Celma Eduardo":
 - Nova página `src/routes/convite.$token.tsx`; `isAuthPage` aceita `/convite/*` para visitantes sem sessão; head() próprio.
 - Links: `whatsappLink()` existente e `sms:+244…?body=…`; telefone guardado em formato 244.
 - Textos novos em `src/lib/i18n.ts`; testes para expiração/uso único do convite e formato do link SMS.
+
+# Tradução completa para kimbundu
+- Hoje só as palavras principais estão em kimbundu; o resto aparece em português.
+- Passar todos os textos de todos os ecrãs (entrar, vender, produtos, kilapé, clientes, relatórios, definições, equipa, convite) para o dicionário de línguas e traduzi-los para kimbundu.
+- Aviso sincero: a tradução será um rascunho feito por mim. O kimbundu tem variantes e poucos exemplos escritos; deve ser revista por alguém que fale bem a língua antes de mostrar a clientes.
+- Entrego também uma lista com todas as frases (português ↔ kimbundu) para essa pessoa corrigir facilmente.
+- Técnico: mover textos fixos dos ecrãs para chaves em `src/lib/i18n.ts`; teste garante que nenhuma chave fica vazia em kimbundu.
