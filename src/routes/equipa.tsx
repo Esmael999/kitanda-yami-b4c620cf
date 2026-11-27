@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, UserPlus } from "lucide-react";
+import { Copy, Loader2, MessageCircle, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Card, Field, PageHeader } from "@/components/app/ui";
 import { supabase } from "@/integrations/supabase/client";
 import { useCloud } from "@/lib/store";
 import { PERMISSIONS, type Permission } from "@/lib/cloud-map";
+import { angolanPhone } from "@/lib/phone";
+import { createInvite, listInvites, inviteUrl, type TeamInvite, type InviteContact } from "@/lib/team-invite";
 import { defaultHelperPermissions, HELPER_PRESETS } from "@/lib/business";
 
 export const Route = createFileRoute("/equipa")({
@@ -48,6 +50,9 @@ function Team() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [kind, setKind] = useState<InviteContact>("email");
+  const [invites, setInvites] = useState<TeamInvite[]>([]);
+  const [share, setShare] = useState<{ url: string; contact: string; kind: InviteContact } | null>(null);
   const [perms, setPerms] = useState<Perms>(() => defaultHelperPermissions(type));
   const [busy, setBusy] = useState(false);
 
@@ -60,6 +65,7 @@ function Team() {
     if (error) toast.error("Sem internet: não foi possível ver a equipa.");
     else setHelpers((data ?? []) as Helper[]);
     setLoading(false);
+    try { setInvites(await listInvites()); } catch { toast.error("Não foi possível consultar os convites."); }
   }, []);
 
   useEffect(() => {
@@ -77,20 +83,31 @@ function Team() {
 
   const invite = async (e: FormEvent) => {
     e.preventDefault();
+    if (busy) return;
+    const contact = kind === "phone" ? angolanPhone(email) : email.trim().toLowerCase();
+    if (!contact) { toast.error("Introduza um contacto válido."); return; }
     setBusy(true);
-    const { error } = await supabase.rpc("invite_employee", { _email: email, _name: name, _permissions: perms });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Ajudante adicionado");
-    setName("");
-    setEmail("");
-    setPerms(defaultHelperPermissions(type));
-    void load();
+    try {
+      const result = await createInvite({ contact, kind, name, permissions: perms });
+      setShare({url:inviteUrl(result.token), contact, kind});
+      toast.success("Convite criado");
+      setName(""); setEmail(""); setPerms(defaultHelperPermissions(type));
+      await load();
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível criar o convite."); }
+    finally { setBusy(false); }
   };
 
+  const resend = async (i: TeamInvite) => {
+    if (busy || i.used_at) return;
+    setBusy(true);
+    try {
+      const result = await createInvite({ contact:i.contact, kind:i.kind, name:i.name, permissions:i.permissions });
+      setShare({url:inviteUrl(result.token),contact:i.contact,kind:i.kind});
+      toast.success("Novo link criado. O anterior deixou de funcionar.");
+      await load();
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível reenviar."); }
+    finally { setBusy(false); }
+  };
   const update = async (h: Helper, patch: { permissions?: Perms; active?: boolean }) => {
     const next = { ...h, ...patch };
     setHelpers((list) => list.map((x) => (x.id === h.id ? next : x)));
@@ -113,16 +130,18 @@ function Team() {
           <div>
             <p className="font-semibold">Convidar ajudante</p>
             <p className="text-sm text-muted-foreground">
-              O ajudante cria conta na app com este email e entra logo na sua loja. Cada venda fica com o nome de quem
-              a fez.
+              Envie um convite ao ajudante. O link é válido por 7 dias e só pode ser utilizado uma vez.
             </p>
           </div>
           <form onSubmit={invite} className="space-y-3">
             <Field label="Nome" htmlFor="h-name">
-              <Input id="h-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="João" className="h-12 rounded-xl text-base" />
+              <Input id="h-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="João" className="h-12 rounded-xl text-base" />
             </Field>
-            <Field label="Email do ajudante" htmlFor="h-email">
-              <Input id="h-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="joao@exemplo.com" className="h-12 rounded-xl text-base" />
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1" role="group" aria-label="Contacto do ajudante">
+              {(["email","phone"] as const).map(k => <Button key={k} type="button" variant={kind===k?"hero":"ghost"} aria-pressed={kind===k} onClick={() => {setKind(k);setEmail("");}}> {k==="email"?"Email":"Telefone"}</Button>)}
+            </div>
+            <Field label={kind==="email"?"Email do ajudante":"Telefone do ajudante (+244)"} htmlFor="h-email">
+              <Input id="h-email" type={kind==="email"?"email":"tel"} required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={kind==="email"?"joao@exemplo.com":"923 456 789"} className="h-12 rounded-xl text-base" />
             </Field>
             <Field label="Perfil de acesso" htmlFor="h-preset">
               <select id="h-preset" value="" onChange={(e) => { const preset = HELPER_PRESETS[Number(e.target.value)]; if (e.target.value !== "" && preset) setPerms({ ...preset.permissions }); }} className="h-12 w-full rounded-xl border bg-card px-3 text-sm">
@@ -138,7 +157,20 @@ function Team() {
           </form>
         </Card>
 
-        {loading ? null : helpers.length === 0 ? (
+        {share && <Card className="space-y-3">
+          <p className="font-semibold">Enviar convite</p>
+          <p className="text-sm text-muted-foreground">Partilhe o link apenas com o ajudante. Pode ser usado uma vez e expira em 7 dias.</p>
+          <Button variant="hero" className="w-full" asChild><a href={`https://wa.me/${share.kind==="phone"?share.contact.replace(/^\+/,""):""}?text=${encodeURIComponent("Convite para a equipa Kitanda Yami: "+share.url)}`} target="_blank" rel="noopener noreferrer"><MessageCircle /> WhatsApp</a></Button>
+          <Button variant="soft" className="w-full" asChild><a href={`sms:${share.kind==="phone"?share.contact:""}?body=${encodeURIComponent("Convite para a equipa Kitanda Yami: "+share.url)}`}>Enviar por SMS</a></Button>
+          <Button variant="soft" className="w-full" onClick={async()=>{try{await navigator.clipboard.writeText(share.url);toast.success("Link copiado");}catch{toast.error("Copie o link no campo abaixo.");}}}><Copy /> Copiar link</Button>
+          <Input readOnly value={share.url} aria-label="Link do convite" onFocus={ev=>ev.target.select()} />
+          <Button variant="ghost" className="w-full" onClick={()=>setShare(null)}>Fechar</Button>
+        </Card>}
+        {invites.filter(i=>!i.used_at).map(i=><Card key={i.id} className="space-y-2">
+          <p className="font-semibold">{i.name}</p><p className="text-sm text-muted-foreground">{i.contact} · {new Date(i.expires_at).getTime()<=Date.now()?"expirado":"à espera"}</p>
+          <Button variant="soft" className="w-full" disabled={busy} onClick={()=>void resend(i)}>Reenviar convite</Button>
+        </Card>)}
+        {loading ? null : helpers.length === 0 && invites.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">Ainda não tem ajudantes.</p>
         ) : (
           helpers.map((h) => (

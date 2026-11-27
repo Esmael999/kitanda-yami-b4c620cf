@@ -125,14 +125,14 @@ export function verifyPhone(phone: string, token: string) {
   return supabase.auth.verifyOtp({ phone: normalized, token: token.trim(), type: "sms" });
 }
 
-export function signUp(input: { email: string; password: string; fullName: string }) {
+export function signUp(input: { email: string; password: string; fullName: string; invitation?: string }) {
   return supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
       // handle_new_user() reads these to name the person and their new store.
-      data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName) },
-      ...(typeof window !== "undefined" ? { emailRedirectTo: window.location.origin } : {}),
+      data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName), ...(input.invitation ? { team_invitation: input.invitation } : {}) },
+      ...(typeof window !== "undefined" ? { emailRedirectTo: input.invitation ? `${window.location.origin}/entrar?convite=${encodeURIComponent(input.invitation)}` : window.location.origin } : {}),
     },
   });
 }
