@@ -129,7 +129,7 @@ grant execute on function public.create_team_invite(text,text,text,jsonb,text), 
 grant execute on function public.inspect_team_invite(text) to anon,authenticated;
 -- Read-only activity API. Attribution uses server-authenticated actor IDs in existing ledger rows.
 create or replace function public.team_activity(_employee_id uuid, _days integer default 7)
-returns jsonb language plpgsql stable security invoker set search_path='' as $
+returns jsonb language plpgsql stable security invoker set search_path='' as $activity$
 declare est uuid := public.current_establishment_id(); actor uuid; since timestamptz;
 begin
   if auth.uid() is null or est is null or not public.is_owner() then raise exception 'Sem permissão.' using errcode='42501'; end if;
@@ -152,7 +152,7 @@ begin
         select m.id,m.created_at,'stock',null::integer,m.delta,p.name from public.stock_movements m left join public.products p on p.id=m.product_id and p.establishment_id=est where m.establishment_id=est and m.created_by=actor and m.sale_id is null and m.created_at>=since
       ) events order by at desc,id limit 100
     ) q),'[]'::jsonb));
-end $;
+end $activity$;
 revoke all on function public.team_activity(uuid,integer) from public,anon,authenticated;
 grant execute on function public.team_activity(uuid,integer) to authenticated;
 commit;
