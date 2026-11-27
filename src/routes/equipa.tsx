@@ -47,7 +47,7 @@ function PermList({ value, onChange }: { value: Perms; onChange: (p: Perms) => v
 
 function Team() {
   const t = useT();
-  const { member } = useCloud();
+  const { member, visitor } = useCloud();
   const type = member?.businessType;
   const [helpers, setHelpers] = useState<Helper[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ function Team() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    if (member?.role !== "owner" || !member.active) return;
+    if (visitor || member?.role !== "owner" || !member.active) return;
     const { data, error } = await supabase
       .from("employees")
       .select("*")
@@ -72,7 +72,7 @@ function Team() {
     else setHelpers((data ?? []) as Helper[]);
     setLoading(false);
     try { setInvites(await listInvites()); } catch { toast.error("Não foi possível consultar os convites."); }
-  }, [member?.role, member?.active]);
+  }, [member?.role, member?.active, visitor]);
 
   useEffect(() => {
     void load();
@@ -82,7 +82,7 @@ function Team() {
     return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [load]);
 
-  if (member?.role !== "owner" || !member.active) {
+  if (visitor || member?.role !== "owner" || !member.active) {
     return (
       <div>
         <PageHeader title={t("team.title")} back="/mais" />

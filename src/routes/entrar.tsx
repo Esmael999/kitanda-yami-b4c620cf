@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Loader2, MailCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field } from "@/components/app/ui";
@@ -9,6 +9,7 @@ import { authMessage, signIn, signInPhone, signInWithGoogle, signUp, signUpPhone
 import { inspectInvite, redeemInvite, type InviteDetails } from "@/lib/team-invite";
 import { signOut } from "@/lib/auth";
 import { angolanPhone, MIN_PASSWORD_LENGTH } from "@/lib/phone";
+import { enterVisitor, isVisitorAvailable, readVisitor } from "@/lib/visitor";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
 
@@ -65,11 +66,15 @@ function SignIn() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [localAvailable,setLocalAvailable]=useState(false);
+  useEffect(()=>setLocalAvailable(isVisitorAvailable()),[]);
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const { convite } = Route.useSearch();
+  const localPhone = localAvailable && !convite && method === "phone";
   const [invitation, setInvitation] = useState<InviteDetails | null>(null);
   const [inviteLoading, setInviteLoading] = useState(!!convite);
   const [inviteError, setInviteError] = useState(false);
@@ -94,12 +99,14 @@ function SignIn() {
   };
 
   if (auth.status === "signed_in" && !convite) return <Navigate to="/vender" replace />;
+  if (auth.status === "signed_out" && localAvailable && !convite && readVisitor()) return <Navigate to="/" replace />;
 
   const switchMode = (next: "in" | "up") => {
     setMode(next);
     setError(null);
     setSent(false);
     setPassword("");
+    setShowPassword(false);
     setOtp("");
   };
 
@@ -107,8 +114,14 @@ function SignIn() {
     e.preventDefault();
     if (busy) return;
     setError(null);
+    if (localPhone) {
+      if (auth.status !== "signed_out") return;
+      if (!angolanPhone(phone)) { setError("Introduza um número angolano válido (9 dígitos)."); return; }
+      try { setPassword(""); enterVisitor(fullName); } catch { setError("Não foi possível abrir o espaço local. Tente novamente."); }
+      return;
+    }
 
-    if (mode === "up" && password.length < MIN_PASSWORD_LENGTH) {
+    if (mode === "up" && !(sent && method==="phone") && password.length < MIN_PASSWORD_LENGTH) {
       setError("A palavra-passe tem de ter pelo menos 6 caracteres.");
       return;
     }
@@ -215,7 +228,7 @@ function SignIn() {
         <>
           <form onSubmit={submit} className="space-y-4">
             {!invitation && <div role="group" aria-label="Forma de acesso" className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
-              {(["email", "phone"] as const).map(m => <button key={m} type="button" disabled={busy} aria-pressed={method === m} onClick={() => { setMethod(m); setError(null); }} className={`rounded-xl py-3 text-sm font-semibold ${method === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{m === "email" ? "Email" : "Telefone"}</button>)}
+              {(["email", "phone"] as const).map(m => <button key={m} type="button" disabled={busy} aria-pressed={method === m} onClick={() => { setMethod(m); setPassword(""); setShowPassword(false); setError(null); }} className={`rounded-xl py-3 text-sm font-semibold ${method === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{m === "email" ? "Email" : "Telefone"}</button>)}
             </div>}
             {mode === "up" && (
               <div className="grid gap-3">
@@ -249,24 +262,24 @@ function SignIn() {
               />
             </Field>}
 
-            <Field
+            {!localPhone && <Field
               label={t("common.password")}
               htmlFor="a-password"
-              hint={mode === "up" ? "Pelo menos 6 caracteres. Evite palavras-passe fáceis de adivinhar." : undefined}
+              hint={mode === "up" ? "Pelo menos 6 caracteres." : undefined}
               
             >
-              <Input
+              <div className="relative"><Input
                 id="a-password"
-                type="password"
+                type={showPassword?"text":"password"}
                 required
                 minLength={mode === "up" ? MIN_PASSWORD_LENGTH : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 autoComplete={mode === "up" ? "new-password" : "current-password"}
-                className="h-12 rounded-xl text-base"
-              />
-            </Field>
+                className="h-12 rounded-xl pr-12 text-base"
+              /><Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-1 my-auto size-11" aria-label={showPassword?"Ocultar palavra-passe":"Mostrar palavra-passe"} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff/>:<Eye/>}</Button></div>
+            </Field>}
 
             {error && (
               <p role="alert" className="rounded-xl bg-debt-soft px-3 py-2 text-sm font-medium text-debt">
@@ -274,13 +287,13 @@ function SignIn() {
               </p>
             )}
 
-            <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
+            <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy || (localPhone && auth.status !== "signed_out")}>
               {busy ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <ArrowRight />
               )}
-              {mode === "up" ? t("auth.signUp") : t("auth.signIn")}
+              {localPhone ? "Continuar sem conta" : mode === "up" ? t("auth.signUp") : t("auth.signIn")}
             </Button>
           </form>
 

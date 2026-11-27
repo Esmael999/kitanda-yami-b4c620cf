@@ -21,6 +21,7 @@ type Cloud = {
   pending: number;
   failed: FailedOp[];
   lastSyncedAt: string | null;
+  visitor?: boolean;
 };
 
 const SERVER_STATE = emptyState();
@@ -44,7 +45,7 @@ const setCloud = (patch: Partial<Cloud>) => {
 
 const key = (name: string) => `${name}:${cloud.userId}`;
 const saveLocal = () => {
-  if (!cloud.userId) return;
+  if (!cloud.userId || cloud.visitor) return;
   void idbSet(key("ledger"), ledger);
   void idbSet(key("queue"), queue);
   void idbSet(key("failed"), cloud.failed);
@@ -78,6 +79,7 @@ export function updateLedger(
   const before = ledger;
   ledger = fn(before);
   localVersion++;
+  if (cloud.visitor) { queue = []; setCloud({}); return; }
   const list =
     typeof ops === "function"
       ? ops(before, ledger)
@@ -90,9 +92,18 @@ export function updateLedger(
 
 // ---------- session lifecycle ----------
 
+/** Preview-only local ledger: no account identity, no reads or writes to the cloud. */
+export function startVisitorSession(id:string, name:string) {
+  if (cloud.visitor && cloud.userId===id && loaded) return;
+  ledger = {...emptyState(), settings:{businessName:"A minha cantina",ownerName:name}};
+  queue = []; loaded = true; localVersion++;
+  cloud = {userId:id,email:"",member:{role:"owner",active:true,permissions:{},email:"",businessType:"cantina"},status:"offline",pending:0,failed:[],lastSyncedAt:null,visitor:true};
+  notify();
+}
+
 export async function startSession(userId: string, email: string) {
   if (cloud.userId === userId && loaded) return;
-  cloud = { ...cloud, userId, email, failed: [] };
+  cloud = { ...cloud, userId, email, failed: [], visitor: false };
   const [cached, q, failed, member] = await Promise.all([
     idbGet<LedgerState>(`ledger:${userId}`),
     idbGet<SyncOp[]>(`queue:${userId}`),
@@ -183,7 +194,7 @@ async function applyOp(op: SyncOp) {
 }
 
 export function flush(): Promise<void> {
-  if (!cloud.userId) return Promise.resolve();
+  if (!cloud.userId || cloud.visitor) return Promise.resolve();
   if (flushing) return flushing.then(() => (queue.length ? flush() : undefined));
   flushing = (async () => {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -227,7 +238,7 @@ async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ da
 
 async function pull() {
   const uid = cloud.userId;
-  if (!uid) return;
+  if (!uid || cloud.visitor) return;
   const versionAtStart = localVersion;
   try {
     const { data: me, error: meErr } = await supabase
@@ -293,6 +304,7 @@ async function pull() {
 
 /** Owner only: change the kind of business (needs internet). */
 export async function setBusinessType(type: string) {
+  if (cloud.visitor) { if (cloud.member) setCloud({member:{...cloud.member,businessType:type}}); return; }
   const { error } = await supabase.rpc("set_business_type", { _type: type });
   if (error) throw new Error(error.message);
   if (cloud.member) setCloud({ member: { ...cloud.member, businessType: type } });
@@ -300,6 +312,7 @@ export async function setBusinessType(type: string) {
 
 /** Upload a backup or the old device-only data; the server skips anything already there. */
 export async function importToCloud(data: LedgerState) {
+  if (cloud.visitor) throw new Error("Entre na sua conta para importar para a nuvem.");
   await flush();
   const { data: result, error } = await supabase.rpc("import_ledger", { _data: data as never });
   if (error) throw new Error(error.message);

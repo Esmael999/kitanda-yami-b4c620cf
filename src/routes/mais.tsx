@@ -27,8 +27,8 @@ const items = [
 
 function More() {
   const t = useT();
-  const { member } = useCloud();
-  const showTeam = member?.role === "owner";
+  const { member, visitor } = useCloud();
+  const showTeam = member?.role === "owner" && !visitor;
   const visible = items.filter((i) => i.to !== "/relatorios" || can(member, "relatorios"));
   return (
     <div>
