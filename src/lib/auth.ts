@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { isAuthRetryableFetchError, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { initialBusinessName } from "@/lib/business";
+import { angolanPhone } from "./phone";
 
 export type AuthState = {
   status: "checking" | "signed_out" | "signed_in";
@@ -106,6 +107,24 @@ export function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 }
 
+export function signInPhone(phone: string, password: string) {
+  const normalized = angolanPhone(phone);
+  if (!normalized) throw new Error("Introduza um número angolano válido.");
+  return supabase.auth.signInWithPassword({ phone: normalized, password });
+}
+
+export function signUpPhone(input: { phone: string; password: string; fullName: string; invitation?: string }) {
+  const phone = angolanPhone(input.phone);
+  if (!phone) throw new Error("Introduza um número angolano válido.");
+  return supabase.auth.signUp({ phone, password: input.password, options: { data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName), ...(input.invitation ? { team_invitation: input.invitation } : {}) } } });
+}
+
+export function verifyPhone(phone: string, token: string) {
+  const normalized = angolanPhone(phone);
+  if (!normalized) throw new Error("Introduza um número angolano válido.");
+  return supabase.auth.verifyOtp({ phone: normalized, token: token.trim(), type: "sms" });
+}
+
 export function signUp(input: { email: string; password: string; fullName: string }) {
   return supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
@@ -134,6 +153,9 @@ export const signOut = () => {
 /** The backend answers in English; merchants read Portuguese. */
 const MESSAGES: [string, string][] = [
   ["Invalid login credentials", "Email ou palavra-passe errados."],
+  ["Phone not confirmed", "Confirme o número de telefone com o código recebido por SMS."],
+  ["Phone signups are disabled", "A criação de contas por telefone ainda não está disponível. Utilize o email."],
+  ["Unsupported phone provider", "A confirmação por SMS ainda não está disponível. Utilize o email."],
   ["Email not confirmed", "Confirme o email que lhe enviámos antes de entrar."],
   ["User already registered", "Esta conta já existe. Entre com a sua palavra-passe."],
   ["already registered", "Esta conta já existe. Entre com a sua palavra-passe."],

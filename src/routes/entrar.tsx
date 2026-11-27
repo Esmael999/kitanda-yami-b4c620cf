@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
-import { authMessage, signIn, signInWithGoogle, signUp, useAuth } from "@/lib/auth";
+import { authMessage, signIn, signInPhone, signInWithGoogle, signUp, signUpPhone, useAuth, verifyPhone } from "@/lib/auth";
+import { angolanPhone, MIN_PASSWORD_LENGTH } from "@/lib/phone";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
 
@@ -56,6 +57,9 @@ function SignIn() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
+  const [method, setMethod] = useState<"email" | "phone">("email");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -69,6 +73,7 @@ function SignIn() {
     setError(null);
     setSent(false);
     setPassword("");
+    setOtp("");
   };
 
   const submit = async (e: FormEvent) => {
@@ -76,15 +81,19 @@ function SignIn() {
     if (busy) return;
     setError(null);
 
-    if (mode === "up" && password.length < 6) {
-      setError("A palavra-passe tem de ter pelo menos 6 letras.");
+    if (mode === "up" && password.length < MIN_PASSWORD_LENGTH) {
+      setError("A palavra-passe tem de ter pelo menos 6 caracteres.");
       return;
     }
 
+    if (method === "phone" && !angolanPhone(phone)) { setError("Introduza um número angolano válido (9 dígitos)."); return; }
     setBusy(true);
     try {
-      if (mode === "up") {
-        const { data, error: err } = await signUp({ email, password, fullName });
+      if (sent && method === "phone") {
+        const { error: err } = await verifyPhone(phone, otp);
+        if (err) throw err;
+      } else if (mode === "up") {
+        const { data, error: err } = method === "phone" ? await signUpPhone({ phone, password, fullName }) : await signUp({ email, password, fullName });
         if (err) throw err;
         // Email confirmation switched on: no session yet, the merchant must click the link.
         if (!data.session) {
@@ -92,7 +101,7 @@ function SignIn() {
           return;
         }
       } else {
-        const { error: err } = await signIn(email, password);
+        const { error: err } = method === "phone" ? await signInPhone(phone, password) : await signIn(email, password);
         if (err) throw err;
       }
       await navigate({ to: "/vender" });
@@ -139,7 +148,18 @@ function SignIn() {
         </p>
       </div>
 
-      {sent ? (
+      {sent && method === "phone" ? (
+        <Card className="space-y-3">
+          <p className="font-semibold">Confirme o seu telefone</p>
+          <p className="text-sm text-muted-foreground">Introduza o código SMS enviado para {angolanPhone(phone)}.</p>
+          <form onSubmit={submit} className="space-y-3">
+            <Field label="Código SMS" htmlFor="a-otp"><Input id="a-otp" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={6} className="h-12 rounded-xl text-center text-lg tracking-widest" /></Field>
+            {error && <p role="alert" className="text-sm text-debt">{error}</p>}
+            <Button variant="hero" size="xl" className="w-full" disabled={busy || otp.length !== 6}>Confirmar</Button>
+            <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={() => switchMode("in")}>Voltar a entrar</Button>
+          </form>
+        </Card>
+      ) : sent ? (
         <Card className="space-y-3 text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success-soft text-primary">
             <MailCheck className="size-6" />
@@ -156,6 +176,9 @@ function SignIn() {
       ) : (
         <>
           <form onSubmit={submit} className="space-y-4">
+            <div role="group" aria-label="Forma de acesso" className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
+              {(["email", "phone"] as const).map(m => <button key={m} type="button" disabled={busy} aria-pressed={method === m} onClick={() => { setMethod(m); setError(null); }} className={`rounded-xl py-3 text-sm font-semibold ${method === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{m === "email" ? "Email" : "Telefone"}</button>)}
+            </div>
             {mode === "up" && (
               <div className="grid gap-3">
                 <Field label="O seu nome" htmlFor="a-name">
@@ -172,7 +195,9 @@ function SignIn() {
               </div>
             )}
 
-            <Field label="Email" htmlFor="a-email">
+            {method === "phone" ? <Field label="Telefone" htmlFor="a-phone">
+              <div className="flex items-center gap-2"><span className="grid h-12 shrink-0 place-items-center rounded-xl border bg-secondary px-3 text-sm font-semibold">+244</span><Input id="a-phone" type="tel" inputMode="tel" autoComplete="tel-national" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="923 456 789" className="h-12 min-w-0 rounded-xl text-base" /></div>
+            </Field> : <Field label="Email" htmlFor="a-email">
               <Input
                 id="a-email"
                 type="email"
@@ -183,18 +208,19 @@ function SignIn() {
                 autoComplete="email"
                 className="h-12 rounded-xl text-base"
               />
-            </Field>
+            </Field>}
 
             <Field
               label="Palavra-passe"
               htmlFor="a-password"
+              hint={mode === "up" ? "Pelo menos 6 caracteres. Evite palavras-passe fáceis de adivinhar." : undefined}
               
             >
               <Input
                 id="a-password"
                 type="password"
                 required
-                minLength={mode === "up" ? 6 : undefined}
+                minLength={mode === "up" ? MIN_PASSWORD_LENGTH : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
