@@ -36,7 +36,7 @@ begin
   if jsonb_typeof(coalesce(_permissions,'{}'::jsonb)) <> 'object' then raise exception 'Permissões inválidas.'; end if;
   select jsonb_object_agg(k, coalesce((_permissions->k) = 'true'::jsonb,false)) into perms
     from unnest(array['vender','fiado','receber','produtos','relatorios']) k;
-  if exists(select 1 from public.employees e where lower(e.email)=contact_value) then
+  if exists(select 1 from public.employees e where e.establishment_id=est and lower(e.email)=contact_value) then
     raise exception 'Já existe uma associação ou convite anterior para este contacto.';
   end if;
   insert into kitanda_private.team_invites(establishment_id,contact,kind,name,permissions,token_hash,expires_at)

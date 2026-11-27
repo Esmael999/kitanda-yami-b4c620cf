@@ -219,7 +219,7 @@ function SignIn() {
             </div>}
             {mode === "up" && (
               <div className="grid gap-3">
-                <Field label="O seu nome" htmlFor="a-name">
+                <Field label={t("settings.ownerName")} htmlFor="a-name">
                   <Input
                     id="a-name"
                     required
@@ -233,9 +233,9 @@ function SignIn() {
               </div>
             )}
 
-            {method === "phone" ? <Field label="Telefone" htmlFor="a-phone">
+            {method === "phone" ? <Field label={t("common.phone")} htmlFor="a-phone">
               <div className="flex items-center gap-2"><span className="grid h-12 shrink-0 place-items-center rounded-xl border bg-secondary px-3 text-sm font-semibold">+244</span><Input id="a-phone" readOnly={!!invitation} type="tel" inputMode="tel" autoComplete="tel-national" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="923 456 789" className="h-12 min-w-0 rounded-xl text-base" /></div>
-            </Field> : <Field label="Email" htmlFor="a-email">
+            </Field> : <Field label={t("common.email")} htmlFor="a-email">
               <Input
                 id="a-email"
                 readOnly={!!invitation}
@@ -250,7 +250,7 @@ function SignIn() {
             </Field>}
 
             <Field
-              label="Palavra-passe"
+              label={t("common.password")}
               htmlFor="a-password"
               hint={mode === "up" ? "Pelo menos 6 caracteres. Evite palavras-passe fáceis de adivinhar." : undefined}
               

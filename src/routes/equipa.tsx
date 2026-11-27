@@ -9,6 +9,7 @@ import { Card, Field, PageHeader } from "@/components/app/ui";
 import { supabase } from "@/integrations/supabase/client";
 import { useCloud } from "@/lib/store";
 import { PERMISSIONS, type Permission } from "@/lib/cloud-map";
+import { useT } from "@/lib/i18n";
 import { angolanPhone } from "@/lib/phone";
 import { createInvite, listInvites, inviteUrl, type TeamInvite, type InviteContact } from "@/lib/team-invite";
 import { defaultHelperPermissions, HELPER_PRESETS } from "@/lib/business";
@@ -44,6 +45,7 @@ function PermList({ value, onChange }: { value: Perms; onChange: (p: Perms) => v
 }
 
 function Team() {
+  const t = useT();
   const { member } = useCloud();
   const type = member?.businessType;
   const [helpers, setHelpers] = useState<Helper[]>([]);
@@ -75,7 +77,7 @@ function Team() {
   if (member?.role !== "owner") {
     return (
       <div>
-        <PageHeader title="Equipa" back="/mais" />
+        <PageHeader title={t("team.title")} back="/mais" />
         <Card className="mx-5 text-sm">Só o dono da loja pode gerir a equipa.</Card>
       </div>
     );
@@ -134,13 +136,13 @@ function Team() {
             </p>
           </div>
           <form onSubmit={invite} className="space-y-3">
-            <Field label="Nome" htmlFor="h-name">
+            <Field label={t("common.name")} htmlFor="h-name">
               <Input id="h-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="João" className="h-12 rounded-xl text-base" />
             </Field>
             <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1" role="group" aria-label="Contacto do ajudante">
               {(["email","phone"] as const).map(k => <Button key={k} type="button" variant={kind===k?"hero":"ghost"} aria-pressed={kind===k} onClick={() => {setKind(k);setEmail("");}}> {k==="email"?"Email":"Telefone"}</Button>)}
             </div>
-            <Field label={kind==="email"?"Email do ajudante":"Telefone do ajudante (+244)"} htmlFor="h-email">
+            <Field label={kind==="email"?t("team.contactEmail"):t("team.contactPhone")} htmlFor="h-email">
               <Input id="h-email" type={kind==="email"?"email":"tel"} required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={kind==="email"?"joao@exemplo.com":"923 456 789"} className="h-12 rounded-xl text-base" />
             </Field>
             <Field label="Perfil de acesso" htmlFor="h-preset">
@@ -158,7 +160,7 @@ function Team() {
         </Card>
 
         {share && <Card className="space-y-3">
-          <p className="font-semibold">Enviar convite</p>
+          <p className="font-semibold">{t("team.sendInvite")}</p>
           <p className="text-sm text-muted-foreground">Partilhe o link apenas com o ajudante. Pode ser usado uma vez e expira em 7 dias.</p>
           <Button variant="hero" className="w-full" asChild><a href={`https://wa.me/${share.kind==="phone"?share.contact.replace(/^\+/,""):""}?text=${encodeURIComponent("Convite para a equipa Kitanda Yami: "+share.url)}`} target="_blank" rel="noopener noreferrer"><MessageCircle /> WhatsApp</a></Button>
           <Button variant="soft" className="w-full" asChild><a href={`sms:${share.kind==="phone"?share.contact:""}?body=${encodeURIComponent("Convite para a equipa Kitanda Yami: "+share.url)}`}>Enviar por SMS</a></Button>
@@ -167,8 +169,8 @@ function Team() {
           <Button variant="ghost" className="w-full" onClick={()=>setShare(null)}>Fechar</Button>
         </Card>}
         {invites.filter(i=>!i.used_at).map(i=><Card key={i.id} className="space-y-2">
-          <p className="font-semibold">{i.name}</p><p className="text-sm text-muted-foreground">{i.contact} · {new Date(i.expires_at).getTime()<=Date.now()?"expirado":"à espera"}</p>
-          <Button variant="soft" className="w-full" disabled={busy} onClick={()=>void resend(i)}>Reenviar convite</Button>
+          <p className="font-semibold">{i.name}</p><p className="text-sm text-muted-foreground">{i.contact} · {new Date(i.expires_at).getTime()<=Date.now()?"expirado":t("team.waiting")}</p>
+          <Button variant="soft" className="w-full" disabled={busy} onClick={()=>void resend(i)}>{t("team.resend")}</Button>
         </Card>)}
         {loading ? null : helpers.length === 0 && invites.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">Ainda não tem ajudantes.</p>
@@ -179,7 +181,7 @@ function Team() {
                 <div>
                   <p className="font-semibold">{h.name || h.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {h.email} · {h.user_id ? "já entrou" : "à espera que crie conta"}
+                    {h.email} · {h.user_id ? t("team.joined") : "à espera que crie conta"}
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-xs">

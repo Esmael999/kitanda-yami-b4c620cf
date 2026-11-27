@@ -62,7 +62,7 @@ function Products() {
         title={t("nav.products")}
         subtitle={`${state.products.length} produtos · stock vale ${formatKz(stockValue)}`}
         action={
-          <Button variant="hero" size="icon-lg" aria-label="Novo produto" onClick={() => setCreating(true)}>
+          <Button variant="hero" size="icon-lg" aria-label={t("common.newProduct")} onClick={() => setCreating(true)}>
             <Plus />
           </Button>
         }
@@ -74,7 +74,7 @@ function Products() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Procurar produto"
+            placeholder={t("common.searchProduct")}
             className="h-12 rounded-xl pl-10 text-base"
           />
         </div>
@@ -172,6 +172,7 @@ function ProductDrawer({
   product: Product | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState<Omit<Product, "id">>(product ?? blank);
   const [restock, setRestock] = useState(0);
   const { userId, member } = useCloud();
@@ -221,7 +222,7 @@ function ProductDrawer({
         </DrawerHeader>
         <div className="space-y-4 overflow-y-auto px-4">
           {can(member, "produtos") && <PhotoPicker value={photoEdit ? photoEdit.value : oldPhoto} disabled={saving} onChange={value => setPhotoEdit({ value })} />}
-          <Field label="Nome" htmlFor="p-name">
+          <Field label={t("common.name")} htmlFor="p-name">
             <Input
               id="p-name"
               value={form.name}
@@ -231,7 +232,7 @@ function ProductDrawer({
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Preço de venda" htmlFor="p-price">
+            <Field label={t("common.price")} htmlFor="p-price">
               <MoneyInput id="p-price" value={form.price} onChange={(v) => set("price", v)} />
             </Field>
             <Field label="Custo" htmlFor="p-cost">
