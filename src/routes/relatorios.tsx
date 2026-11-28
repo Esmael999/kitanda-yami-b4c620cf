@@ -6,7 +6,9 @@ import { ProfitValue, LossNotice } from "@/components/app/profit";
 import { can } from "@/lib/cloud-map";
 import { filterReport, type SaleStatus } from "@/lib/report-filter";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ReferenceLine } from "recharts";
-import { addDays, formatKz, periodStats, salesByDay, startOfDay, topProducts } from "@/lib/ledger";
+import { ReportCalendar } from "@/components/app/report-calendar";
+import { periodRange, rangeLabel, reportSeries, type ReportPeriod, type ReportRange } from "@/lib/report-period";
+import { addDays, formatKz, periodStats, startOfDay, topProducts } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -24,15 +26,6 @@ export const Route = createFileRoute("/relatorios")({
   component: Reports,
 });
 
-const periods = [
-  { days: 1, label: "report.today" },
-  { days: 7, label: "report.week" },
-  { days: 30, label: "report.month" },
-  { days: 0, label: "report.custom" },
-] as const;
-
-const weekday = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
 function Reports() {
   const original = useLedger();
   const { member } = useCloud();
@@ -42,16 +35,12 @@ function Reports() {
   const [chartType, setChartType] = useState<"bars" | "line" | "pie">("bars");
   const state = filterReport(original, customer, product, status);
   const t = useT();
-  const [days, setDays] = useState<number>(7);
-  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const [fromTxt, setFromTxt] = useState(() => iso(addDays(new Date(), -6)));
-  const [toTxt, setToTxt] = useState(() => iso(new Date()));
-  const custom = days === 0;
-  const parse = (t: string) => { if (!t) return startOfDay(new Date()); const [y, m, d] = t.split("-").map(Number); return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1); };
-  const to = custom ? addDays(parse(toTxt), 1) : addDays(startOfDay(new Date()), 1);
-  const from = custom ? parse(fromTxt) : addDays(to, -days);
-  const stats = periodStats(state, from, to);
-  const chart = salesByDay(state, custom ? Math.min(366, Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000))) : days, addDays(to, -1));
+  const [period,setPeriod]=useState<ReportPeriod>("week");
+  const [anchor,setAnchor]=useState(()=>startOfDay(new Date()));
+  const [custom,setCustom]=useState<ReportRange>(()=>({from:addDays(startOfDay(new Date()),-6),to:addDays(startOfDay(new Date()),1)}));
+  const {from,to}=periodRange(period,anchor,custom);
+  const stats=periodStats(state,from,to);
+  const {unit,points:chart}=reportSeries(state,{from,to});
   const max = Math.max(1, ...chart.map((c) => c.total));
   const top = topProducts(state, from, to);
   const margin = stats.total ? Math.round((stats.profit / stats.total) * 100) : 0;
@@ -62,32 +51,7 @@ function Reports() {
     <div>
       <PageHeader title={t("page.reports")} back="/mais" />
       <div className="space-y-4 px-5">
-        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-secondary p-1">
-          {periods.map((p) => (
-            <button
-              key={p.days}
-              onClick={() => setDays(p.days)}
-              className={cn(
-                "rounded-xl py-2.5 text-sm font-semibold",
-                days === p.days ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              {t(p.label)}
-            </button>
-          ))}
-        </div>
-
-        {custom && (
-          <div className="grid grid-cols-2 gap-2">
-            <label className="text-xs text-muted-foreground">{t("report.from")}
-              <input type="date" value={fromTxt} max={toTxt} onChange={(e) => { if (e.target.value && e.target.value <= toTxt) setFromTxt(e.target.value); }} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm text-foreground" />
-            </label>
-            <label className="text-xs text-muted-foreground">{t("report.to")}
-              <input type="date" value={toTxt} min={fromTxt} onChange={(e) => { if (e.target.value && e.target.value >= fromTxt) setToTxt(e.target.value); }} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm text-foreground" />
-            </label>
-          </div>
-        )}
-
+        <ReportCalendar period={period} anchor={anchor} custom={custom} onPeriod={setPeriod} onAnchor={setAnchor} onCustom={setCustom}/>
         <Card className="space-y-2">
           <p className="font-semibold">{t("report.filters")}</p>
           <label className="block text-xs text-muted-foreground">{t("report.customer")}
@@ -113,7 +77,7 @@ function Reports() {
         <section className="rounded-3xl bg-gradient-hero p-5 shadow-glow">
           <Eyebrow className="text-foreground/80">{t("report.sold")}</Eyebrow>
           <p className="text-4xl font-extrabold tabular">{formatKz(stats.total)}</p>
-          <p className="text-sm text-foreground/85">{stats.count} vendas</p>
+          <p className="text-sm text-foreground/85">{stats.count} vendas · {rangeLabel({from,to})}</p>
         </section>
 
         <div className="grid grid-cols-2 gap-3">
@@ -131,20 +95,19 @@ function Reports() {
 
         {stats.lossCount>0&&<LossNotice><strong>{stats.lossCount} {stats.lossCount===1?"venda com prejuízo":"vendas com prejuízo"}</strong><p>Perdas nessas vendas: {formatKz(stats.lossTotal)}. Resultado do período: {formatKz(stats.profit)}.</p></LossNotice>}
         <Card>
-          <p className="mb-1 font-semibold">Lucros e prejuízos por dia</p>
+          <p className="mb-1 font-semibold">Lucros e prejuízos por {unit}</p>
           <p className="mb-3 text-xs text-muted-foreground">Receitas menos o custo dos produtos vendidos.</p>
-          <div className="h-44 min-w-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={chart.map(c=>({date:c.date.toLocaleDateString("pt-AO",{day:"2-digit",month:"2-digit"}),profit:c.profit}))}><XAxis dataKey="date" tick={{fontSize:10,fill:"var(--muted-foreground)"}}/><YAxis width={48} tick={{fontSize:10,fill:"var(--muted-foreground)"}}/><ReferenceLine y={0} stroke="var(--muted-foreground)"/><Tooltip formatter={(v:number)=>formatKz(v)} contentStyle={{background:"var(--card)",color:"var(--foreground)",borderColor:"var(--border)"}}/><Bar dataKey="profit" name="Resultado bruto">{chart.map(c=><Cell key={c.date.toISOString()} fill={c.profit<0?"var(--destructive)":c.profit>0?"var(--primary)":"var(--muted-foreground)"}/>)}</Bar></BarChart></ResponsiveContainer></div>
+          <div className="h-44 min-w-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={chart.map(c=>({date:c.label,profit:c.profit}))}><XAxis dataKey="date" tick={{fontSize:10,fill:"var(--muted-foreground)"}}/><YAxis width={48} tick={{fontSize:10,fill:"var(--muted-foreground)"}}/><ReferenceLine y={0} stroke="var(--muted-foreground)"/><Tooltip formatter={(v:number)=>formatKz(v)} contentStyle={{background:"var(--card)",color:"var(--foreground)",borderColor:"var(--border)"}}/><Bar dataKey="profit" name="Resultado bruto">{chart.map(c=><Cell key={c.date.toISOString()} fill={c.profit<0?"var(--destructive)":c.profit>0?"var(--primary)":"var(--muted-foreground)"}/>)}</Bar></BarChart></ResponsiveContainer></div>
           <p className="text-xs text-muted-foreground"><span className="text-primary font-semibold">Verde: lucro</span> · <span className="text-destructive font-semibold">Vermelho: prejuízo</span></p>
         </Card>
         <Card>
-          <p className="mb-3 font-semibold">{t("report.daily")}</p>
+          <p className="mb-3 font-semibold">Vendas por {unit}</p>
           <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">
             {([{ key: "bars", label: "report.bars" }, { key: "line", label: "report.line" }, { key: "pie", label: "report.pie" }] as const).map(c => <button key={c.key} type="button" aria-pressed={chartType === c.key} onClick={() => setChartType(c.key)} className={cn("rounded-lg py-2 text-xs font-semibold", chartType === c.key ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>{t(c.label)}</button>)}
           </div>
-          {custom && (to.getTime() - from.getTime()) / 86400000 > 366 && chartType !== "pie" && <p className="mb-2 text-xs text-muted-foreground">{t("report.rangeHint")}</p>}
           {chartType === "line" && <div className="h-48 min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chart.map(c => ({ date: c.date.toLocaleDateString("pt-AO", { day: "2-digit", month: "2-digit" }), total: c.total }))}>
+              <LineChart data={chart.map(c => ({ date: c.label, total: c.total }))}>
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
                 <YAxis width={48} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
                 <Tooltip formatter={(v: number) => formatKz(v)} contentStyle={{ background: "var(--card)", color: "var(--foreground)", borderColor: "var(--border)" }} />
@@ -164,7 +127,7 @@ function Reports() {
                   />
                 </div>
                 {chart.length <= 7 && (
-                  <span className="text-[10px] text-muted-foreground">{weekday[c.date.getDay()]}</span>
+                  <span className="text-[10px] text-muted-foreground">{c.label}</span>
                 )}
               </div>
             ))}
