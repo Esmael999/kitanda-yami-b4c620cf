@@ -4,6 +4,7 @@ export type ReportRange={from:Date;to:Date};
 export const dateKey=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 export function parseDateKey(value:string):Date {
   const [y,m,d]=value.split("-").map(Number);
+  if(y===undefined||m===undefined||d===undefined)return new Date(NaN);
   return new Date(y,m-1,d);
 }
 export function periodRange(period:ReportPeriod,anchor:Date,custom?:ReportRange):ReportRange {

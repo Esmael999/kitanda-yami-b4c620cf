@@ -13,7 +13,10 @@ import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
 
 export const Route = createFileRoute("/entrar")({
-  validateSearch: (s: Record<string, unknown>): { convite?: string } => ({ convite: typeof s.convite === "string" && /^[a-f0-9]{64}$/.test(s.convite) ? s.convite : undefined }),
+  validateSearch: (s: Record<string, unknown>): { convite?: string } => {
+    const convite = s["convite"];
+    return typeof convite === "string" && /^[a-f0-9]{64}$/.test(convite) ? { convite } : {};
+  },
   head: () => ({
     meta: [
       { title: "Entrar — Kitanda Yami" },
@@ -236,7 +239,7 @@ function SignIn() {
             <Field
               label={t("common.password")}
               htmlFor="a-password"
-              hint={invitation || mode === "up" ? "Pelo menos 6 caracteres." : undefined}
+              {...(invitation || mode === "up" ? { hint: "Pelo menos 6 caracteres." } : {})}
               
             >
               <div className="relative"><Input

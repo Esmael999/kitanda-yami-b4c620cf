@@ -229,7 +229,7 @@ function Team() {
               <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${h.user_id?"bg-success-soft text-primary":"bg-debt-soft text-debt"}`}>{h.user_id?"Conta associada":"À espera de adesão"}</span>
               <div className="rounded-2xl border bg-secondary/30 p-3"><PermList value={h.permissions} onChange={(p) => void update(h, { permissions: p })} /></div>
               {!h.user_id && h.active && !invites.some(i=>!i.used_at&&i.contact===displayContact(h.email)) && <Button variant="soft" className="w-full" disabled={busy||inviteReady!=="ready"} onClick={()=>void renewLegacy(h)}>Reenviar acesso</Button>}
-              <Button variant="soft" size="xl" className="w-full" onClick={()=>setActivityHelper({...h,job_title:jobs[h.email.toLowerCase()]||h.job_title})}><Activity/>Ver actividades</Button>
+              <Button variant="soft" size="xl" className="w-full" onClick={()=>setActivityHelper({...h,job_title:jobs[h.email.toLowerCase()]||h.job_title||"Ajudante"})}><Activity/>Ver actividades</Button>
             </Card>
           ))
         )}

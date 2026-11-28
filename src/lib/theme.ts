@@ -7,7 +7,7 @@ export function readTheme(): Theme {
   catch { return "dark"; }
 }
 export function applyTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset["theme"] = theme;
 }
 export function useThemePreference() {
   const [theme, setTheme] = useState<Theme>("dark");
