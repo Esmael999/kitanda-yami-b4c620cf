@@ -3,7 +3,8 @@ import { applyTheme, readTheme } from "@/lib/theme";
 import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { BookOpen, HandCoins, Home, LayoutGrid, Package, Plus } from "lucide-react";
 import { isAuthPage, useAuth } from "@/lib/auth";
-import { endSession, startSession, useLedgerReady } from "@/lib/store";
+import { readVisitor } from "@/lib/visitor";
+import { endSession, startSession, startVisitorSession, useCloud, useLedgerReady } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { useT, type MessageKey } from "@/lib/i18n";
 
@@ -81,12 +82,17 @@ export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const auth = useAuth();
   const ready = useLedgerReady();
+  const { visitor } = useCloud();
   useEffect(() => { applyTheme(readTheme()); }, []);
 
   // The account owns the offline copy: load it in when someone signs in, drop it when they leave.
   useEffect(() => {
     if (auth.userId) void startSession(auth.userId, auth.email);
-    else if (auth.status === "signed_out") endSession();
+    else if (auth.status === "signed_out") {
+      const local = readVisitor();
+      if (local) void startVisitorSession(local.id, local.name);
+      else endSession();
+    }
   }, [auth.userId, auth.email, auth.status]);
 
   if (isAuthPage(pathname)) {
@@ -107,7 +113,7 @@ export function AppShell() {
     );
   }
 
-  if (auth.status !== "signed_in") return <Navigate to="/entrar" replace />;
+  if (auth.status !== "signed_in" && !visitor && !readVisitor()) return <Navigate to="/entrar" replace />;
 
   return (
     <div className="min-h-dvh bg-app-glow">

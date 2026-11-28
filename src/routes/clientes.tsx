@@ -47,7 +47,7 @@ function Customers() {
       <div className="space-y-3 px-5">
         <div className="relative">
           <Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Procurar por nome ou telefone" className="h-12 rounded-xl pl-10 text-base" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("common.searchPerson")} className="h-12 rounded-xl pl-10 text-base" />
         </div>
         {list.length === 0 ? (
           <EmptyState

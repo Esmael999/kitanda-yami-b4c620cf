@@ -72,7 +72,7 @@ function Sell() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Procurar produto"
+            placeholder={t("common.searchProduct")}
             className="h-12 rounded-xl pl-10 text-base"
           />
         </div>
@@ -190,6 +190,7 @@ function CheckoutDrawer({
 }) {
   const state = useLedger();
   const { userId } = useCloud();
+  const t = useT();
   const [method, setMethod] = useState<PaymentMethod | "">("");
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<"pronto" | "fiado">("pronto");
@@ -259,7 +260,7 @@ function CheckoutDrawer({
       <Drawer open={open} onOpenChange={(o) => !o && onDone()}>
         <DrawerContent className="mx-auto max-h-[92dvh] max-w-md">
           <DrawerHeader className="text-left">
-            <DrawerTitle>Comprovativo</DrawerTitle>
+            <DrawerTitle>{t("common.receipt")}</DrawerTitle>
             <DrawerDescription>Envie ao cliente pelo WhatsApp.</DrawerDescription>
           </DrawerHeader>
           <pre className="mx-4 overflow-y-auto whitespace-pre-wrap rounded-2xl bg-secondary p-4 font-sans text-sm">{text}</pre>
@@ -307,14 +308,14 @@ function CheckoutDrawer({
             ))}
           </div>
 
-          {(mode === "pronto" || upfront > 0) && <Field label="Método de pagamento (opcional)" htmlFor="payment-method" hint="Regista como recebeu o dinheiro, sem efectuar cobranças. O método fica guardado neste dispositivo.">
+          {(mode === "pronto" || upfront > 0) && <Field label={t("common.paymentMethod")} htmlFor="payment-method" hint="Regista como recebeu o dinheiro, sem efectuar cobranças. O método fica guardado neste dispositivo.">
             <select id="payment-method" value={method} onChange={e => setMethod(e.target.value as PaymentMethod | "")} className="h-12 w-full rounded-xl border bg-card px-3 text-sm">
               <option value="">Não indicado</option>
               {PAYMENT_METHODS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
             </select>
           </Field>}
           {mode === "pronto" && (method === "" || method === "cash") && (
-            <Field label="Valor entregue pelo cliente (opcional)" htmlFor="given">
+            <Field label={t("common.given")} htmlFor="given">
               <MoneyInput id="given" value={given} onChange={setGiven} />
               {given > 0 && (
                 <p className={cn("text-sm font-semibold", changeDue >= 0 ? "text-primary" : "text-destructive")}>
@@ -360,7 +361,7 @@ function CheckoutDrawer({
 
           {mode === "fiado" && (
             <Field
-              label="Entrada paga agora (opcional)"
+              label={t("common.upfront")}
               htmlFor="upfront"
               hint={`Fica a dever: ${formatKz(Math.max(0, total - upfront))}`}
             >
@@ -382,6 +383,7 @@ function CheckoutDrawer({
 function CustomerSearch({ customers, value, onChange }: { customers: { id: string; name: string; phone: string }[]; value: string | null; onChange: (id: string | null) => void }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const t = useT();
   const chosen = customers.find((c) => c.id === value);
   const list = customers
     .filter((c) => `${c.name} ${c.phone}`.toLowerCase().includes(q.trim().toLowerCase()))
@@ -401,7 +403,7 @@ function CustomerSearch({ customers, value, onChange }: { customers: { id: strin
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Procurar cliente por nome ou telefone"
+        placeholder={t("common.searchCustomer")}
         className="h-12 rounded-xl text-base"
       />
       {open && (

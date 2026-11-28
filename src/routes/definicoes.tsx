@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field, PageHeader } from "@/components/app/ui";
+import { leaveVisitor } from "@/lib/visitor";
 import { signOut, useAuth } from "@/lib/auth";
 import { setBusinessType, updateLedger, useCloud, useLedger } from "@/lib/store";
 import { initialBusinessName, type BusinessType } from "@/lib/business";
@@ -39,7 +40,7 @@ function SettingsPage() {
   const [owner, setOwner] = useState(state.settings.ownerName);
   const fileRef = useRef<HTMLInputElement>(null);
   const auth = useAuth();
-  const { member, pending, failed, userId } = useCloud();
+  const { member, pending, failed, userId, visitor } = useCloud();
   const profilePhoto = useDetail(userId, "business-photo");
   const customCategory = useDetail(userId, "business-category");
   const [category, setCategory] = useState("");
@@ -67,6 +68,7 @@ function SettingsPage() {
   const navigate = useNavigate();
 
   const leave = async () => {
+    if (visitor) { leaveVisitor(); return; }
     if (leaving) return;
     setLeaving(true);
     setLeaveError(false);
@@ -208,7 +210,7 @@ function SettingsPage() {
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-primary"><UserRound className="size-5" /></span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold break-words">{state.settings.ownerName || state.settings.businessName}</p>
-              <p className="text-sm break-all text-muted-foreground">{auth.email}</p>
+              <p className="text-sm break-all text-muted-foreground">{visitor ? "Conta neste dispositivo" : auth.email}</p>
               {member && <p className="mt-1 text-xs text-muted-foreground">{t(member.role === "owner" ? "account.owner" : "account.employee")}</p>}
             </div>
           </div>

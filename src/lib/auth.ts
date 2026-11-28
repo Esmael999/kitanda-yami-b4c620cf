@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { isAuthRetryableFetchError, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { initialBusinessName } from "@/lib/business";
+import { angolanPhone } from "./phone";
 
 export type AuthState = {
   status: "checking" | "signed_out" | "signed_in";
@@ -106,14 +107,32 @@ export function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 }
 
-export function signUp(input: { email: string; password: string; fullName: string }) {
+export function signInPhone(phone: string, password: string) {
+  const normalized = angolanPhone(phone);
+  if (!normalized) throw new Error("Introduza um número angolano válido.");
+  return supabase.auth.signInWithPassword({ phone: normalized, password });
+}
+
+export function signUpPhone(input: { phone: string; password: string; fullName: string; invitation?: string }) {
+  const phone = angolanPhone(input.phone);
+  if (!phone) throw new Error("Introduza um número angolano válido.");
+  return supabase.auth.signUp({ phone, password: input.password, options: { data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName), ...(input.invitation ? { team_invitation: input.invitation } : {}) } } });
+}
+
+export function verifyPhone(phone: string, token: string) {
+  const normalized = angolanPhone(phone);
+  if (!normalized) throw new Error("Introduza um número angolano válido.");
+  return supabase.auth.verifyOtp({ phone: normalized, token: token.trim(), type: "sms" });
+}
+
+export function signUp(input: { email: string; password: string; fullName: string; invitation?: string }) {
   return supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
       // handle_new_user() reads these to name the person and their new store.
-      data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName) },
-      ...(typeof window !== "undefined" ? { emailRedirectTo: window.location.origin } : {}),
+      data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName), ...(input.invitation ? { team_invitation: input.invitation } : {}) },
+      ...(typeof window !== "undefined" ? { emailRedirectTo: input.invitation ? `${window.location.origin}/entrar?convite=${encodeURIComponent(input.invitation)}` : window.location.origin } : {}),
     },
   });
 }
@@ -133,14 +152,18 @@ export const signOut = () => {
 
 /** The backend answers in English; merchants read Portuguese. */
 const MESSAGES: [string, string][] = [
-  ["Invalid login credentials", "Email ou palavra-passe errados."],
+  ["Invalid login credentials", "Verifique o contacto e a palavra-passe."],
+  ["Phone logins are disabled", "Entre com o seu email."],
+  ["Phone not confirmed", "Confirme o número de telefone com o código recebido por SMS."],
+  ["Phone signups are disabled", "Crie a conta com o seu email."],
+  ["Unsupported phone provider", "Crie a conta com o seu email."],
   ["Email not confirmed", "Confirme o email que lhe enviámos antes de entrar."],
   ["User already registered", "Esta conta já existe. Entre com a sua palavra-passe."],
   ["already registered", "Esta conta já existe. Entre com a sua palavra-passe."],
-  ["Password should be at least", "A palavra-passe tem de ter pelo menos 6 letras."],
+  ["Password should be at least", "Escolha uma palavra-passe mais comprida."],
   [
     "known to be weak",
-    "Essa palavra-passe é muito fácil de adivinhar. Junte letras e números, por exemplo “cantina2026”.",
+    "O servidor não aceitou esta palavra-passe. Escolha outra.",
   ],
   ["Unable to validate email", "Este email não parece válido."],
   ["For security purposes", "Entre novamente para confirmar o seu email."],

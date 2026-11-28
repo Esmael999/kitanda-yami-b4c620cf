@@ -27,8 +27,8 @@ const items = [
 
 function More() {
   const t = useT();
-  const { member } = useCloud();
-  const showTeam = member?.role === "owner";
+  const { member, visitor } = useCloud();
+  const showTeam = member?.role === "owner" && !visitor;
   const visible = items.filter((i) => i.to !== "/relatorios" || can(member, "relatorios"));
   return (
     <div>
@@ -56,7 +56,7 @@ function More() {
                 <UserCog className="size-5" />
               </span>
               <div className="flex-1">
-                <p className="font-semibold">Equipa</p>
+                <p className="font-semibold">{t("team.title")}</p>
                 <p className="text-sm text-muted-foreground">Ajudantes e o que cada um pode fazer</p>
               </div>
               <ChevronRight className="size-5 text-muted-foreground" />
