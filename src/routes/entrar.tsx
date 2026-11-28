@@ -179,7 +179,7 @@ function SignIn() {
 
       {convite && (inviteLoading || inviteError || !invitation) ? <Card className="space-y-3 text-center">
         <p className="font-semibold">{inviteLoading ? "A verificar convite…" : "Convite indisponível"}</p>
-        {!inviteLoading && <><p className="text-sm text-muted-foreground">Este convite pode ter expirado, já ter sido utilizado ou não estar disponível. Peça um novo link à dona da loja.</p><Button variant="soft" className="w-full" onClick={() => window.location.assign("/entrar")}>Voltar a entrar</Button></>}
+        {!inviteLoading && <><p className="text-sm text-muted-foreground">Peça um novo link à dona da loja.</p><Button variant="soft" className="w-full" onClick={() => window.location.assign("/entrar")}>Voltar a entrar</Button></>}
       </Card> : <>
       {invitation && <Card className="space-y-2"><p className="font-semibold">Convite para {invitation.shop}</p><p className="text-sm font-medium text-primary">Função: {invitation.job_title}</p><p className="text-sm text-muted-foreground">Crie a sua conta com o contacto indicado e uma palavra-passe só sua. Confirme o contacto e aceite o convite para entrar na loja com as permissões atribuídas.</p></Card>}
       {convite && auth.status === "signed_in" ? <Card className="space-y-3">
@@ -228,7 +228,7 @@ function SignIn() {
       ) : (
         <>
           <form onSubmit={submit} className="space-y-4">
-            {!invitation && <div role="group" aria-label="Forma de acesso" className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
+            {!invitation && localAvailable && <div role="group" aria-label="Forma de acesso" className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
               {(["email", "phone"] as const).map(m => <button key={m} type="button" disabled={busy} aria-pressed={method === m} onClick={() => { setMethod(m); setPassword(""); setShowPassword(false); setError(null); }} className={`rounded-xl py-3 text-sm font-semibold ${method === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{m === "email" ? "Email" : "Telefone"}</button>)}
             </div>}
             {mode === "up" && (

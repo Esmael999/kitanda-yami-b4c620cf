@@ -153,10 +153,10 @@ export const signOut = () => {
 /** The backend answers in English; merchants read Portuguese. */
 const MESSAGES: [string, string][] = [
   ["Invalid login credentials", "Verifique o contacto e a palavra-passe."],
-  ["Phone logins are disabled", "Entre com email ou continue sem conta nesta pré-visualização."],
+  ["Phone logins are disabled", "Entre com o seu email."],
   ["Phone not confirmed", "Confirme o número de telefone com o código recebido por SMS."],
-  ["Phone signups are disabled", "A criação de contas por telefone ainda não está disponível. Utilize o email."],
-  ["Unsupported phone provider", "A confirmação por SMS ainda não está disponível. Utilize o email."],
+  ["Phone signups are disabled", "Crie a conta com o seu email."],
+  ["Unsupported phone provider", "Crie a conta com o seu email."],
   ["Email not confirmed", "Confirme o email que lhe enviámos antes de entrar."],
   ["User already registered", "Esta conta já existe. Entre com a sua palavra-passe."],
   ["already registered", "Esta conta já existe. Entre com a sua palavra-passe."],

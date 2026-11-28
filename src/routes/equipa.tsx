@@ -72,7 +72,7 @@ function Team() {
     if (error) toast.error("Sem internet: não foi possível ver a equipa.");
     else setHelpers((data ?? []) as Helper[]);
     setLoading(false);
-    try { setInvites(await listInvites()); setInviteReady("ready"); } catch(err) { setInviteReady(err instanceof InviteServiceUnavailable?"legacy":"error"); }
+    try { setInvites(await listInvites()); setInviteReady("ready"); } catch(err) { setInviteReady(err instanceof InviteServiceUnavailable?"legacy":"error"); setInvites([]); setKind("email"); }
   }, [member?.role, member?.active, visitor]);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ function Team() {
 
   const invite = async (e: FormEvent) => {
     e.preventDefault();
-    if (busy) return;
+    if (busy || (inviteReady!=="ready" && !(inviteReady==="legacy"&&kind==="email"))) return;
     const contact = kind === "phone" ? angolanPhone(email) : email.trim().toLowerCase();
     if (!contact) { toast.error("Introduza um contacto válido."); return; }
     if (!jobTitle.trim()) { toast.error("Indique a função do ajudante."); return; }
@@ -113,7 +113,7 @@ function Team() {
       toast.success("Convite criado");
       setName(""); setEmail(""); setJobTitle("Vendedor"); setPerms(defaultHelperPermissions(type));
       await load();
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível criar o convite."); }
+    } catch (err) { console.error("create invite",err); toast.error("Não foi possível criar o convite. Verifique os dados e tente novamente."); }
     finally { setBusy(false); }
   };
 
@@ -125,7 +125,7 @@ function Team() {
       setShare({url:inviteUrl(result.token),contact:i.contact,kind:i.kind});
       toast.success("Novo link criado. O anterior deixou de funcionar.");
       await load();
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível reenviar."); }
+    } catch (err) { console.error("resend invite",err); toast.error("Não foi possível reenviar. Tente novamente."); }
     finally { setBusy(false); }
   };
   const update = async (h: Helper, patch: { permissions?: Perms; active?: boolean }) => {
@@ -137,7 +137,7 @@ function Team() {
       _active: next.active,
     });
     if (error) {
-      toast.error(error.message);
+      console.error("update helper",error); toast.error("Não foi possível guardar. Tente novamente.");
       void load();
     }
   };
@@ -153,21 +153,21 @@ function Team() {
               Envie um convite ao ajudante. {inviteReady==="ready"?"O link é válido por 7 dias e só pode ser utilizado uma vez.":"Escolha o contacto e as permissões."}
             </p>
           </div>
-          {inviteReady==="legacy"&&<p className="rounded-xl bg-secondary p-3 text-sm text-muted-foreground">{kind==="email"?"Convite por email: a pessoa cria a conta com o mesmo endereço. A função personalizada e o link de uso único ainda não estão disponíveis.":"Seleccione Email para convidar. A associação por telefone ainda não está disponível."} <button type="button" className="font-semibold text-primary" onClick={()=>void load()}>Actualizar</button></p>}
+          {inviteReady==="legacy"&&<p className="text-sm text-muted-foreground">O ajudante cria a conta com o email indicado.</p>}
           {inviteReady==="error"&&<p className="text-sm text-muted-foreground">Não foi possível consultar os convites. <button type="button" className="font-semibold text-primary" onClick={()=>void load()}>Tentar novamente</button></p>}
           <form onSubmit={invite} className="space-y-4">
             <fieldset disabled={busy} className="space-y-4">
             <Field label={t("common.name")} htmlFor="h-name">
               <Input id="h-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="João" className="h-12 rounded-xl text-base" />
             </Field>
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1" role="group" aria-label="Contacto do ajudante">
+            {inviteReady==="ready"&&<div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1" role="group" aria-label="Contacto do ajudante">
               {(["email","phone"] as const).map(k => <Button key={k} type="button" variant={kind===k?"hero":"ghost"} className="min-h-11" aria-pressed={kind===k} onClick={() => {setKind(k);setEmail("");}}> {k==="email"?<Mail/>:<Phone/>}{k==="email"?"Email":"Telefone"}</Button>)}
-            </div>
+            </div>}
             <Field label={kind==="email"?t("team.contactEmail"):t("team.contactPhone")} htmlFor="h-email">
               <div className="flex items-center gap-2">{kind==="phone"&&<span className="grid h-12 shrink-0 place-items-center rounded-xl border bg-secondary px-3 font-semibold">+244</span>}<Input id="h-email" type={kind==="email"?"email":"tel"} required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={kind==="email"?"joao@exemplo.com":"923 456 789"} className="h-12 min-w-0 rounded-xl text-base" /></div>
             </Field>
             <div className="space-y-2">
-              <p className="text-sm font-semibold">Função do ajudante</p>
+              <p className="text-sm font-semibold">{inviteReady==="ready"?"Função do ajudante":"Permissões sugeridas"}</p>
               <div role="group" aria-label="Funções sugeridas" className="overflow-hidden rounded-2xl border bg-surface">
                 {HELPER_PRESETS.map(p=><button key={p.name} type="button" aria-pressed={jobTitle===p.name} onClick={()=>{setJobTitle(p.name);setPerms({...p.permissions});}} className={`flex min-h-14 w-full items-center gap-3 border-b px-3 py-3 text-left last:border-b-0 ${jobTitle===p.name?"bg-accent":"hover:bg-secondary"}`}>
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary"><Users className="size-5"/></span>
@@ -175,9 +175,9 @@ function Team() {
                   {jobTitle===p.name&&<Check className="size-5 shrink-0 text-primary"/>}
                 </button>)}
               </div>
-              <Field label="Escreva a função" htmlFor="h-job" hint="Pode criar uma função própria. Escolha as permissões abaixo.">
+              {inviteReady==="ready"&&<Field label="Escreva a função" htmlFor="h-job" hint="Pode criar uma função própria. Escolha as permissões abaixo.">
                 <Input id="h-job" required maxLength={80} value={jobTitle} onChange={ev=>setJobTitle(ev.target.value)} placeholder="Ex.: Caixa, entregador ou assistente" className="h-12 rounded-xl text-base"/>
-              </Field>
+              </Field>}
             </div>
             <p className="text-sm font-semibold">O que pode fazer</p>
             <div className="rounded-2xl border bg-secondary/30 p-3"><PermList value={perms} onChange={setPerms} /></div>
@@ -194,7 +194,7 @@ function Team() {
           <Button variant="hero" className="w-full" asChild><a href={whatsappInvite(share.url,share.kind==="phone"?share.contact:undefined,share.legacy?share.contact:undefined)} target="_blank" rel="noopener noreferrer"><MessageCircle /> Enviar pelo WhatsApp</a></Button>
           <Button variant="soft" className="w-full" asChild><a href={`sms:${share.kind==="phone"?share.contact:""}?body=${encodeURIComponent(share.legacy?"Crie a conta com "+share.contact+" em "+share.url:"Convite para a equipa Kitanda Yami: "+share.url)}`}>Enviar por SMS</a></Button>
           <Button variant="soft" className="w-full" onClick={async()=>{try{await navigator.clipboard.writeText(share.url);toast.success("Link copiado");}catch{toast.error("Copie o link no campo abaixo.");}}}><Copy /> Copiar link</Button>
-          <Input readOnly value={share.url} aria-label="Link do convite" onFocus={ev=>ev.target.select()} />
+          <Input readOnly value={share.url} aria-label="Link de acesso" onFocus={ev=>ev.target.select()} />
           <Button variant="ghost" className="w-full" onClick={()=>setShare(null)}>Fechar</Button>
         </Card>}
         {invites.filter(i=>!i.used_at).map(i=><Card key={i.id} className="space-y-2">
@@ -221,7 +221,7 @@ function Team() {
               <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${h.user_id?"bg-success-soft text-primary":"bg-debt-soft text-debt"}`}>{h.user_id?"Já entrou":"À espera"}</span>
               <div className="rounded-2xl border bg-secondary/30 p-3"><PermList value={h.permissions} onChange={(p) => void update(h, { permissions: p })} /></div>
               {!h.user_id && h.active && h.email.includes("@") && <Button variant="soft" className="w-full" onClick={()=>setShare({url:new URL("/entrar",window.location.origin).href,contact:h.email,kind:"email",legacy:true})}>Reenviar acesso</Button>}
-              {h.user_id&&<Button variant="soft" className="w-full" onClick={()=>setActivityHelper(h)}><Activity/>Ver actividades</Button>}
+              {h.user_id&&inviteReady==="ready"&&<Button variant="soft" className="w-full" onClick={()=>setActivityHelper(h)}><Activity/>Ver actividades</Button>}
             </Card>
           ))
         )}
