@@ -9,7 +9,7 @@ import { authMessage, signIn, signInPhone, signInWithGoogle, signUp, signUpPhone
 import { inspectInvite, redeemInvite, type InviteDetails } from "@/lib/team-invite";
 import { signOut } from "@/lib/auth";
 import { angolanPhone, MIN_PASSWORD_LENGTH } from "@/lib/phone";
-import { enterVisitor, isVisitorAvailable, readVisitor } from "@/lib/visitor";
+import { enterLocalAccount, isVisitorAvailable, readVisitor } from "@/lib/visitor";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
 
@@ -117,7 +117,8 @@ function SignIn() {
     if (localPhone) {
       if (auth.status !== "signed_out") return;
       if (!angolanPhone(phone)) { setError("Introduza um número angolano válido (9 dígitos)."); return; }
-      try { setPassword(""); enterVisitor(fullName); } catch { setError("Não foi possível abrir o espaço local. Tente novamente."); }
+      setBusy(true);
+      try { await enterLocalAccount({phone,password,name:fullName,create:mode==="up"}); setPassword(""); } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível entrar. Tente novamente."); } finally { setBusy(false); }
       return;
     }
 
@@ -262,7 +263,7 @@ function SignIn() {
               />
             </Field>}
 
-            {!localPhone && <Field
+            <Field
               label={t("common.password")}
               htmlFor="a-password"
               hint={mode === "up" ? "Pelo menos 6 caracteres." : undefined}
@@ -279,7 +280,8 @@ function SignIn() {
                 autoComplete={mode === "up" ? "new-password" : "current-password"}
                 className="h-12 rounded-xl pr-12 text-base"
               /><Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-1 my-auto size-11" aria-label={showPassword?"Ocultar palavra-passe":"Mostrar palavra-passe"} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff/>:<Eye/>}</Button></div>
-            </Field>}
+            </Field>
+            {localPhone && <p className="text-xs text-muted-foreground">Conta neste dispositivo.</p>}
 
             {error && (
               <p role="alert" className="rounded-xl bg-debt-soft px-3 py-2 text-sm font-medium text-debt">
@@ -293,7 +295,7 @@ function SignIn() {
               ) : (
                 <ArrowRight />
               )}
-              {localPhone ? "Continuar sem conta" : mode === "up" ? t("auth.signUp") : t("auth.signIn")}
+              {mode === "up" ? t("auth.signUp") : t("auth.signIn")}
             </Button>
           </form>
 

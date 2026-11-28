@@ -90,7 +90,7 @@ export function AppShell() {
     if (auth.userId) void startSession(auth.userId, auth.email);
     else if (auth.status === "signed_out") {
       const local = readVisitor();
-      if (local) startVisitorSession(local.id, local.name);
+      if (local) void startVisitorSession(local.id, local.name);
       else endSession();
     }
   }, [auth.userId, auth.email, auth.status]);

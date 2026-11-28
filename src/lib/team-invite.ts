@@ -3,11 +3,14 @@ import type { Permission } from "./cloud-map";
 export type InviteContact = "email" | "phone";
 export type TeamInvite = { id: string; contact: string; kind: InviteContact; name: string; job_title: string; permissions: Partial<Record<Permission, boolean>>; expires_at: string; used_at: string | null };
 export type InviteDetails = Pick<TeamInvite,"contact"|"kind"|"name"|"job_title"> & { shop: string };
-type Rpc = (name: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+type Rpc = (name: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string; code?:string } | null }>;
 async function rpc<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   // Remove the cast after the migration and regeneration of Supabase types.
   const { data, error } = await (supabase.rpc.bind(supabase) as unknown as Rpc)(name,args);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "PGRST202" || error.message.includes("schema cache")) throw new Error("O serviço de convites e actividades ainda não está activo.");
+    throw new Error(error.message);
+  }
   return data as T;
 }
 export const createInvite = (input: {contact: string; kind: InviteContact; name: string; jobTitle: string; permissions: TeamInvite["permissions"]}) =>

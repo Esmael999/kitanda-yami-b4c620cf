@@ -45,7 +45,8 @@ const setCloud = (patch: Partial<Cloud>) => {
 
 const key = (name: string) => `${name}:${cloud.userId}`;
 const saveLocal = () => {
-  if (!cloud.userId || cloud.visitor) return;
+  if (!cloud.userId) return;
+  if (cloud.visitor) { void idbSet(key("local-ledger"),ledger); void idbSet(key("local-member"),cloud.member); return; }
   void idbSet(key("ledger"), ledger);
   void idbSet(key("queue"), queue);
   void idbSet(key("failed"), cloud.failed);
@@ -79,7 +80,7 @@ export function updateLedger(
   const before = ledger;
   ledger = fn(before);
   localVersion++;
-  if (cloud.visitor) { queue = []; setCloud({}); return; }
+  if (cloud.visitor) { queue = []; setCloud({}); saveLocal(); return; }
   const list =
     typeof ops === "function"
       ? ops(before, ledger)
@@ -93,12 +94,15 @@ export function updateLedger(
 // ---------- session lifecycle ----------
 
 /** Preview-only local ledger: no account identity, no reads or writes to the cloud. */
-export function startVisitorSession(id:string, name:string) {
+export async function startVisitorSession(id:string, name:string) {
   if (cloud.visitor && cloud.userId===id && loaded) return;
-  ledger = {...emptyState(), settings:{businessName:"A minha cantina",ownerName:name}};
-  queue = []; loaded = true; localVersion++;
-  cloud = {userId:id,email:"",member:{role:"owner",active:true,permissions:{},email:"",businessType:"cantina"},status:"offline",pending:0,failed:[],lastSyncedAt:null,visitor:true};
-  notify();
+  loaded=false; queue=[]; ledger=emptyState();
+  cloud = {userId:id,email:"",member:null,status:"offline",pending:0,failed:[],lastSyncedAt:null,visitor:true}; notify();
+  const [cached,member]=await Promise.all([idbGet<LedgerState>("local-ledger:"+id),idbGet<Member>("local-member:"+id)]).catch(()=>[null,null] as const);
+  if(!cloud.visitor||cloud.userId!==id)return;
+  ledger=cached?{...emptyState(),...cached}:{...emptyState(),settings:{businessName:"A minha cantina",ownerName:name}};
+  cloud={...cloud,member:member??{role:"owner",active:true,permissions:{},email:"",businessType:"cantina"}};
+  loaded=true;localVersion++;notify();
 }
 
 export async function startSession(userId: string, email: string) {
@@ -304,7 +308,7 @@ async function pull() {
 
 /** Owner only: change the kind of business (needs internet). */
 export async function setBusinessType(type: string) {
-  if (cloud.visitor) { if (cloud.member) setCloud({member:{...cloud.member,businessType:type}}); return; }
+  if (cloud.visitor) { if (cloud.member) setCloud({member:{...cloud.member,businessType:type}}); saveLocal(); return; }
   const { error } = await supabase.rpc("set_business_type", { _type: type });
   if (error) throw new Error(error.message);
   if (cloud.member) setCloud({ member: { ...cloud.member, businessType: type } });

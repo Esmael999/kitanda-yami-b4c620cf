@@ -210,7 +210,7 @@ function SettingsPage() {
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-primary"><UserRound className="size-5" /></span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold break-words">{state.settings.ownerName || state.settings.businessName}</p>
-              <p className="text-sm break-all text-muted-foreground">{visitor ? "Visitante" : auth.email}</p>
+              <p className="text-sm break-all text-muted-foreground">{visitor ? "Conta neste dispositivo" : auth.email}</p>
               {member && <p className="mt-1 text-xs text-muted-foreground">{t(member.role === "owner" ? "account.owner" : "account.employee")}</p>}
             </div>
           </div>

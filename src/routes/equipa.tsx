@@ -51,6 +51,7 @@ function Team() {
   const type = member?.businessType;
   const [helpers, setHelpers] = useState<Helper[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteReady,setInviteReady]=useState<boolean|null>(null);
   const [name, setName] = useState("");
   const [jobTitle,setJobTitle] = useState("Vendedor");
   const [activityHelper,setActivityHelper] = useState<Helper|null>(null);
@@ -71,7 +72,7 @@ function Team() {
     if (error) toast.error("Sem internet: não foi possível ver a equipa.");
     else setHelpers((data ?? []) as Helper[]);
     setLoading(false);
-    try { setInvites(await listInvites()); } catch { toast.error("Não foi possível consultar os convites."); }
+    try { setInvites(await listInvites()); setInviteReady(true); } catch { setInviteReady(false); }
   }, [member?.role, member?.active, visitor]);
 
   useEffect(() => {
@@ -144,6 +145,7 @@ function Team() {
               Envie um convite ao ajudante. O link é válido por 7 dias e só pode ser utilizado uma vez.
             </p>
           </div>
+          {inviteReady===false&&<p className="rounded-xl bg-secondary p-3 text-sm text-muted-foreground">O serviço de convites ainda não está activo. <button type="button" className="font-semibold text-primary" onClick={()=>void load()}>Actualizar</button></p>}
           <form onSubmit={invite} className="space-y-4">
             <fieldset disabled={busy} className="space-y-4">
             <Field label={t("common.name")} htmlFor="h-name">
@@ -171,7 +173,7 @@ function Team() {
             <p className="text-sm font-semibold">O que pode fazer</p>
             <div className="rounded-2xl border bg-secondary/30 p-3"><PermList value={perms} onChange={setPerms} /></div>
             </fieldset>
-            <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
+            <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy || inviteReady!==true}>
               {busy ? <Loader2 className="animate-spin" /> : <UserPlus />} Criar convite
             </Button>
           </form>
