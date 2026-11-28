@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 import { isAuthRetryableFetchError, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { initialBusinessName } from "@/lib/business";
-import { angolanPhone } from "./phone";
+import { phoneLoginEmail, displayContact, reservedLoginEmail } from "./phone";
 
 export type AuthState = {
   status: "checking" | "signed_out" | "signed_in";
@@ -24,7 +24,7 @@ function readRemembered(): RememberedUser | null {
   try {
     const raw = window.localStorage.getItem(LAST_USER);
     const user = raw ? (JSON.parse(raw) as Partial<RememberedUser>) : null;
-    return user?.id ? { id: user.id, email: user.email ?? "" } : null;
+    return user?.id ? { id: user.id, email: displayContact(user.email ?? "") } : null;
   } catch {
     return null;
   }
@@ -49,7 +49,7 @@ export function resolveAuth(
   offline: { unreachable: boolean; remembered: RememberedUser | null },
 ): AuthState {
   const user = session?.user;
-  if (user) return { status: "signed_in", userId: user.id, email: user.email ?? "" };
+  if (user) return { status: "signed_in", userId: user.id, email: displayContact(user.email ?? "") };
   if (offline.unreachable && offline.remembered) {
     return { status: "signed_in", userId: offline.remembered.id, email: offline.remembered.email };
   }
@@ -57,7 +57,7 @@ export function resolveAuth(
 }
 
 function apply(session: Session | null, unreachable = false) {
-  if (session?.user) remember({ id: session.user.id, email: session.user.email ?? "" });
+  if (session?.user) remember({ id: session.user.id, email: displayContact(session.user.email ?? "") });
   state = resolveAuth(session, { unreachable, remembered: readRemembered() });
   listeners.forEach((l) => l());
 }
@@ -104,39 +104,27 @@ export function useAuth(): AuthState {
 export const isAuthPage = (pathname: string) => pathname === "/entrar";
 
 export function signIn(email: string, password: string) {
+  if(reservedLoginEmail(email))throw new Error("Escolha a opção Telefone.");
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 }
 
 export function signInPhone(phone: string, password: string) {
-  const normalized = angolanPhone(phone);
-  if (!normalized) throw new Error("Introduza um número angolano válido.");
-  return supabase.auth.signInWithPassword({ phone: normalized, password });
+  return supabase.auth.signInWithPassword({email:phoneLoginEmail(phone),password});
 }
-
-export function signUpPhone(input: { phone: string; password: string; fullName: string; invitation?: string }) {
-  const phone = angolanPhone(input.phone);
-  if (!phone) throw new Error("Introduza um número angolano válido.");
-  return supabase.auth.signUp({ phone, password: input.password, options: { data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName), ...(input.invitation ? { team_invitation: input.invitation } : {}) } } });
+export function signUpPhone(input:{phone:string;password:string;fullName:string;invitation?:string}) {
+  return signupIdentifier({...input,email:phoneLoginEmail(input.phone)});
 }
-
-export function verifyPhone(phone: string, token: string) {
-  const normalized = angolanPhone(phone);
-  if (!normalized) throw new Error("Introduza um número angolano válido.");
-  return supabase.auth.verifyOtp({ phone: normalized, token: token.trim(), type: "sms" });
+export function signUp(input:{email:string;password:string;fullName:string;invitation?:string}) {
+  if(reservedLoginEmail(input.email))throw new Error("Escolha a opção Telefone.");
+  return signupIdentifier(input);
 }
-
-export function signUp(input: { email: string; password: string; fullName: string; invitation?: string }) {
+function signupIdentifier(input:{email:string;password:string;fullName:string;invitation?:string}) {
   return supabase.auth.signUp({
-    email: input.email.trim().toLowerCase(),
-    password: input.password,
-    options: {
-      // handle_new_user() reads these to name the person and their new store.
-      data: { full_name: input.fullName.trim(), business_name: initialBusinessName(input.fullName), ...(input.invitation ? { team_invitation: input.invitation } : {}) },
-      ...(typeof window !== "undefined" ? { emailRedirectTo: input.invitation ? `${window.location.origin}/entrar?convite=${encodeURIComponent(input.invitation)}` : window.location.origin } : {}),
-    },
+    email:input.email.trim().toLowerCase(),password:input.password,
+    options:{data:{full_name:input.fullName.trim(),business_name:initialBusinessName(input.fullName),...(input.invitation?{team_invitation:input.invitation}:{})},
+      ...(typeof window!=="undefined"?{emailRedirectTo:window.location.origin+"/entrar"}:{})}
   });
 }
-
 export function signInWithGoogle() {
   return supabase.auth.signInWithOAuth({
     provider: "google",
@@ -158,6 +146,7 @@ const MESSAGES: [string, string][] = [
   ["Phone signups are disabled", "Crie a conta com o seu email."],
   ["Unsupported phone provider", "Crie a conta com o seu email."],
   ["Email not confirmed", "Confirme o email que lhe enviámos antes de entrar."],
+  ["Database error saving new user", "Não foi possível criar a conta. Se recebeu um convite, peça um novo link."],
   ["User already registered", "Esta conta já existe. Entre com a sua palavra-passe."],
   ["already registered", "Esta conta já existe. Entre com a sua palavra-passe."],
   ["Password should be at least", "Escolha uma palavra-passe mais comprida."],

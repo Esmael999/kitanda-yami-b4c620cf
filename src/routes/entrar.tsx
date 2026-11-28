@@ -1,15 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, MailCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Field } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
-import { authMessage, signIn, signInPhone, signInWithGoogle, signUp, signUpPhone, useAuth, verifyPhone } from "@/lib/auth";
-import { inspectInvite, redeemInvite, type InviteDetails } from "@/lib/team-invite";
+import { authMessage, signIn, signInPhone, signInWithGoogle, signUp, signUpPhone, useAuth } from "@/lib/auth";
+import { inspectInvite, type InviteDetails } from "@/lib/team-invite";
 import { signOut } from "@/lib/auth";
 import { angolanPhone, MIN_PASSWORD_LENGTH } from "@/lib/phone";
-import { enterLocalAccount, isVisitorAvailable, readVisitor } from "@/lib/visitor";
 import { useT } from "@/lib/i18n";
 import { LanguagePicker } from "@/components/app/language-picker";
 
@@ -64,17 +63,13 @@ function SignIn() {
   const [email, setEmail] = useState("");
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [localAvailable,setLocalAvailable]=useState(false);
-  useEffect(()=>setLocalAvailable(isVisitorAvailable()),[]);
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const { convite } = Route.useSearch();
-  const localPhone = localAvailable && !convite && method === "phone";
   const [invitation, setInvitation] = useState<InviteDetails | null>(null);
   const [inviteLoading, setInviteLoading] = useState(!!convite);
   const [inviteError, setInviteError] = useState(false);
@@ -91,15 +86,7 @@ function SignIn() {
     return () => { active = false; };
   }, [convite]);
 
-  const accept = async () => {
-    if (!convite || busy) return;
-    setBusy(true); setError(null);
-    try { await redeemInvite(convite); window.location.replace("/"); }
-    catch (err) { setError(authMessage(err as { message?: string })); setBusy(false); }
-  };
-
   if (auth.status === "signed_in" && !convite) return <Navigate to="/vender" replace />;
-  if (auth.status === "signed_out" && localAvailable && !convite && readVisitor()) return <Navigate to="/" replace />;
 
   const switchMode = (next: "in" | "up") => {
     setMode(next);
@@ -107,37 +94,24 @@ function SignIn() {
     setSent(false);
     setPassword("");
     setShowPassword(false);
-    setOtp("");
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setError(null);
-    if (localPhone) {
-      if (auth.status !== "signed_out") return;
-      if (!angolanPhone(phone)) { setError("Introduza um número angolano válido (9 dígitos)."); return; }
-      setBusy(true);
-      try { await enterLocalAccount({phone,password,name:fullName,create:mode==="up"}); setPassword(""); } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível entrar. Tente novamente."); } finally { setBusy(false); }
-      return;
-    }
-
-    if (mode === "up" && !(sent && method==="phone") && password.length < MIN_PASSWORD_LENGTH) {
-      setError("A palavra-passe tem de ter pelo menos 6 caracteres.");
-      return;
-    }
-
+    if (auth.status !== "signed_out") return;
+    if (mode==="up" && password.length<MIN_PASSWORD_LENGTH) {setError("A palavra-passe tem de ter pelo menos 6 caracteres.");return;}
+    if(convite && (!invitation || mode!=="up"))return;
     if (method === "phone" && !angolanPhone(phone)) { setError("Introduza um número angolano válido (9 dígitos)."); return; }
     setBusy(true);
     try {
-      if (sent && method === "phone") {
-        const { error: err } = await verifyPhone(phone, otp);
-        if (err) throw err;
-      } else if (mode === "up") {
+      if (mode === "up") {
         const { data, error: err } = method === "phone" ? await signUpPhone({ phone, password, fullName, invitation: convite }) : await signUp({ email, password, fullName, invitation: convite });
         if (err) throw err;
         // Email confirmation switched on: no session yet, the merchant must click the link.
         if (!data.session) {
+          if(method==="phone")throw new Error("Não foi possível concluir o acesso por telefone. Tente novamente.");
           setSent(true);
           return;
         }
@@ -145,7 +119,8 @@ function SignIn() {
         const { error: err } = method === "phone" ? await signInPhone(phone, password) : await signIn(email, password);
         if (err) throw err;
       }
-      if (!convite) await navigate({ to: "/vender" });
+      if(convite)window.location.replace("/");
+      else await navigate({ to: "/vender" });
     } catch (err) {
       setError(authMessage(err as { message?: string }));
     } finally {
@@ -168,7 +143,7 @@ function SignIn() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-5 pt-safe pb-8">
-      {mode === "up" && !sent && (
+      {mode === "up" && !sent && !convite && (
         <Button type="button" variant="ghost" size="icon" aria-label="Voltar a entrar" onClick={() => switchMode("in")} className="size-11 self-start">
           <ArrowLeft />
         </Button>
@@ -181,37 +156,25 @@ function SignIn() {
         <p className="font-semibold">{inviteLoading ? "A verificar convite…" : "Convite indisponível"}</p>
         {!inviteLoading && <><p className="text-sm text-muted-foreground">Peça um novo link à dona da loja.</p><Button variant="soft" className="w-full" onClick={() => window.location.assign("/entrar")}>Voltar a entrar</Button></>}
       </Card> : <>
-      {invitation && <Card className="space-y-2"><p className="font-semibold">Convite para {invitation.shop}</p><p className="text-sm font-medium text-primary">Função: {invitation.job_title}</p><p className="text-sm text-muted-foreground">Crie a sua conta com o contacto indicado e uma palavra-passe só sua. Confirme o contacto e aceite o convite para entrar na loja com as permissões atribuídas.</p></Card>}
+      {invitation && <Card className="space-y-3"><span className="grid size-12 place-items-center rounded-2xl bg-success-soft text-primary"><Users/></span><p className="font-semibold">Convite para {invitation.shop}</p><p className="text-sm font-medium text-primary">Função: {invitation.job_title}</p><p className="text-sm text-muted-foreground">Crie a sua conta de ajudante. Terá a sua própria palavra-passe e acesso apenas às tarefas atribuídas pela loja.</p></Card>}
       {convite && auth.status === "signed_in" ? <Card className="space-y-3">
-        <p className="font-semibold">Aceitar convite</p><p className="text-sm text-muted-foreground">Use a conta confirmada com o contacto indicado no convite. Os negócios existentes não são transferidos.</p>
+        <p className="font-semibold">Criar conta de ajudante</p><p className="text-sm text-muted-foreground">Saia da conta actual para criar a conta de ajudante.</p>
         {error && <p role="alert" className="text-sm text-debt">{error}</p>}
-        <Button variant="hero" size="xl" className="w-full" disabled={busy} onClick={() => void accept()}>Entrar na loja</Button>
         <Button variant="soft" className="w-full" disabled={busy} onClick={() => void signOut()}>Usar outra conta</Button>
       </Card> : <>
       <div>
         <h1 className="mt-1 text-3xl leading-tight font-extrabold">
-          {mode === "up" ? t("auth.signUp") : t("auth.signIn")}
+          {invitation ? "Criar conta de ajudante" : mode === "up" ? t("auth.signUp") : t("auth.signIn")}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        {!invitation&&<p className="mt-1 text-sm text-muted-foreground">
           {mode === "up" ? "Já tem uma conta? " : "Não tem uma conta? "}
           <Button type="button" variant="link" className="h-auto px-0 py-1 text-sm" onClick={() => switchMode(mode === "up" ? "in" : "up")}>
             {mode === "up" ? t("auth.signIn") : t("auth.signUp")}
           </Button>
-        </p>
+        </p>}
       </div>
 
-      {sent && method === "phone" ? (
-        <Card className="space-y-3">
-          <p className="font-semibold">Confirme o seu telefone</p>
-          <p className="text-sm text-muted-foreground">Introduza o código SMS enviado para {angolanPhone(phone)}.</p>
-          <form onSubmit={submit} className="space-y-3">
-            <Field label="Código SMS" htmlFor="a-otp"><Input id="a-otp" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={6} className="h-12 rounded-xl text-center text-lg tracking-widest" /></Field>
-            {error && <p role="alert" className="text-sm text-debt">{error}</p>}
-            <Button variant="hero" size="xl" className="w-full" disabled={busy || otp.length !== 6}>Confirmar</Button>
-            <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={() => switchMode("in")}>Voltar a entrar</Button>
-          </form>
-        </Card>
-      ) : sent ? (
+      {sent ? (
         <Card className="space-y-3 text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success-soft text-primary">
             <MailCheck className="size-6" />
@@ -228,7 +191,7 @@ function SignIn() {
       ) : (
         <>
           <form onSubmit={submit} className="space-y-4">
-            {!invitation && localAvailable && <div role="group" aria-label="Forma de acesso" className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
+            {!invitation && <div role="group" aria-label="Forma de acesso" className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
               {(["email", "phone"] as const).map(m => <button key={m} type="button" disabled={busy} aria-pressed={method === m} onClick={() => { setMethod(m); setPassword(""); setShowPassword(false); setError(null); }} className={`rounded-xl py-3 text-sm font-semibold ${method === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{m === "email" ? "Email" : "Telefone"}</button>)}
             </div>}
             {mode === "up" && (
@@ -237,6 +200,7 @@ function SignIn() {
                   <Input
                     id="a-name"
                     required
+                    readOnly={!!invitation}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Celma Eduardo"
@@ -281,7 +245,6 @@ function SignIn() {
                 className="h-12 rounded-xl pr-12 text-base"
               /><Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-1 my-auto size-11" aria-label={showPassword?"Ocultar palavra-passe":"Mostrar palavra-passe"} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff/>:<Eye/>}</Button></div>
             </Field>
-            {localPhone && <p className="text-xs text-muted-foreground">Conta neste dispositivo.</p>}
 
             {error && (
               <p role="alert" className="rounded-xl bg-debt-soft px-3 py-2 text-sm font-medium text-debt">
@@ -289,13 +252,13 @@ function SignIn() {
               </p>
             )}
 
-            <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy || (localPhone && auth.status !== "signed_out")}>
+            <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy || auth.status !== "signed_out"}>
               {busy ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <ArrowRight />
               )}
-              {mode === "up" ? t("auth.signUp") : t("auth.signIn")}
+              {invitation ? "Criar conta de ajudante" : mode === "up" ? t("auth.signUp") : t("auth.signIn")}
             </Button>
           </form>
 

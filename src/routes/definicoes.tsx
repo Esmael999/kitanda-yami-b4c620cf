@@ -87,6 +87,7 @@ function SettingsPage() {
   };
 
   const save = () => {
+    if(member?.role!=="owner"||!member.active)return;
     updateLedger((s) => ({
       ...s,
       settings: { businessName: business.trim() || initialBusinessName(owner), ownerName: owner.trim() },
@@ -143,7 +144,8 @@ function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="space-y-3">
+        {member?.role==="employee"&&<Card className="space-y-2"><p className="font-semibold text-primary">Conta de ajudante</p><p className="font-semibold">{state.settings.businessName}</p><p className="text-sm text-muted-foreground">Acesso às tarefas atribuídas pelo proprietário.</p></Card>}
+        {member?.role==="owner"&&member.active&&<Card className="space-y-3">
           {member?.role === "owner" && member.active && <PhotoPicker profile value={profilePhoto} disabled={detailsBusy} onChange={value => void saveDetail("business-photo", value)} />}
           <Field label={t("settings.businessName")} htmlFor="s-business">
             <Input id="s-business" value={business} onChange={(e) => setBusiness(e.target.value)} className="h-12 rounded-xl text-base" />
@@ -154,7 +156,7 @@ function SettingsPage() {
           <Button variant="hero" size="xl" className="w-full" onClick={save}>
             {t("action.save")}
           </Button>
-        </Card>
+        </Card>}
 
         {member?.role === "owner" && member.active && <Card className="space-y-3">
           <div>
@@ -171,7 +173,7 @@ function SettingsPage() {
             {customCategory && <Button variant="ghost" className="w-full" disabled={detailsBusy} onClick={() => void saveDetail("business-category", null)}>Usar apenas categoria padrão</Button>}
           </div>
         </Card>}
-        <Card className="space-y-3">
+        {member?.role==="owner"&&member.active&&<><Card className="space-y-3">
           <div>
             <p className="font-semibold">{t("settings.backup")}</p>
             <p className="text-sm text-muted-foreground">
@@ -202,7 +204,7 @@ function SettingsPage() {
 
         <Button variant="ghost" className="w-full text-destructive" onClick={() => void wipe()}>
           <Trash2 /> Apagar todos os dados
-        </Button>
+        </Button></>}
 
         <section aria-labelledby="account-heading" className="border-t pt-5 pb-4">
           <h2 id="account-heading" className="mb-4 text-sm font-semibold text-muted-foreground">{t("account.title")}</h2>
@@ -211,7 +213,7 @@ function SettingsPage() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold break-words">{state.settings.ownerName || state.settings.businessName}</p>
               <p className="text-sm break-all text-muted-foreground">{visitor ? "Conta neste dispositivo" : auth.email}</p>
-              {member && <p className="mt-1 text-xs text-muted-foreground">{t(member.role === "owner" ? "account.owner" : "account.employee")}</p>}
+              {member && <p className="mt-1 text-xs text-muted-foreground">{member.role === "owner" ? "Conta normal · Proprietário" : "Conta de ajudante"}</p>}
             </div>
           </div>
           <Button variant="outline" className="h-12 w-full justify-start gap-3 text-destructive" onClick={() => { setLeaveError(false); setLeaveOpen(true); }}>
