@@ -3,12 +3,13 @@ import type { Permission } from "./cloud-map";
 export type InviteContact = "email" | "phone";
 export type TeamInvite = { id: string; contact: string; kind: InviteContact; name: string; job_title: string; permissions: Partial<Record<Permission, boolean>>; expires_at: string; used_at: string | null };
 export type InviteDetails = Pick<TeamInvite,"contact"|"kind"|"name"|"job_title"> & { shop: string };
+export class InviteServiceUnavailable extends Error {}
 type Rpc = (name: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string; code?:string } | null }>;
 async function rpc<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   // Remove the cast after the migration and regeneration of Supabase types.
   const { data, error } = await (supabase.rpc.bind(supabase) as unknown as Rpc)(name,args);
   if (error) {
-    if (error.code === "PGRST202" || error.message.includes("schema cache")) throw new Error("O serviço de convites e actividades ainda não está activo.");
+    if (error.code === "PGRST202" || error.message.includes("schema cache")) throw new InviteServiceUnavailable("O serviço de convites e actividades ainda não está activo.");
     throw new Error(error.message);
   }
   return data as T;
@@ -29,7 +30,7 @@ export type Activity = {
   events: { id:string; at:string; kind:"sale"|"payment"|"stock"; amount:number|null; delta:number|null; product:string|null }[];
 };
 export const getTeamActivity = (id:string, days:1|7|30) => rpc<Activity>("team_activity",{_employee_id:id,_days:days});
-export function whatsappInvite(url:string,phone?:string) {
+export function whatsappInvite(url:string,phone?:string,legacyEmail?:string) {
   const number = phone?.replace(/^\+/,"") ?? "";
-  return "https://wa.me/"+number+"?text="+encodeURIComponent("Olá! Foi convidado a juntar-se à minha equipa no Kitanda Yami. Abra este link para aceitar: "+url);
+  return "https://wa.me/"+number+"?text="+encodeURIComponent(legacyEmail ? "Olá! Foi convidado a juntar-se à minha equipa no Kitanda Yami. Crie a sua conta com o email "+legacyEmail+" em "+url : "Olá! Foi convidado a juntar-se à minha equipa no Kitanda Yami. Abra este link para aceitar: "+url);
 }
