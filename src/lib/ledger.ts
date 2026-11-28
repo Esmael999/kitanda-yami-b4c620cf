@@ -113,8 +113,13 @@ export function validateProduct(p: Omit<Product, "id">): void {
 export const cartTotal = (items: { qty: number; price: number }[]) =>
   items.reduce((sum, i) => sum + i.qty * i.price, 0);
 
-export const saleProfit = (sale: Sale) =>
-  sale.items.reduce((sum, i) => sum + (i.price - i.cost) * i.qty, 0);
+/** Gross result based on the price and cost recorded for each unit, not cash received. */
+export const unitProfit = (item: {price:number;cost:number}) => item.price-item.cost;
+export const cartProfit = (items: {qty:number;price:number;cost:number}[]) =>
+  items.reduce((sum,i)=>sum+unitProfit(i)*i.qty,0);
+export const saleProfit = (sale: Sale) => cartProfit(sale.items);
+export const profitLabel = (value:number) => value<0?"Prejuízo":value>0?"Lucro":"Sem lucro nem prejuízo";
+export const profitColor = (value:number) => value<0?"text-destructive":value>0?"text-primary":"text-muted-foreground";
 
 export type SaleInput = {
   items: { productId: string; qty: number }[];
@@ -240,6 +245,8 @@ export function periodStats(state: LedgerState, from: Date, to: Date) {
     count: sales.length,
     total: sales.reduce((sum, s) => sum + s.total, 0),
     profit: sales.reduce((sum, s) => sum + saleProfit(s), 0),
+    lossCount: sales.filter(s=>saleProfit(s)<0).length,
+    lossTotal: sales.reduce((sum,s)=>sum+Math.max(0,-saleProfit(s)),0),
     received:
       sales.reduce((sum, s) => sum + s.paid, 0) + payments.reduce((sum, p) => sum + p.amount, 0),
     fiado: sales.reduce((sum, s) => sum + (s.total - s.paid), 0),
@@ -251,10 +258,9 @@ export function salesByDay(state: LedgerState, days: number, now = new Date()) {
   return Array.from({ length: days }, (_, i) => {
     const from = addDays(today, i - days + 1);
     const to = addDays(from, 1);
-    const total = state.sales
-      .filter((s) => inRange(s.createdAt, from, to))
-      .reduce((sum, s) => sum + s.total, 0);
-    return { date: from, total };
+    const sales = state.sales.filter((s) => inRange(s.createdAt, from, to));
+    const total = sales.reduce((sum, s) => sum + s.total, 0);
+    return { date: from, total, profit:sales.reduce((sum,s)=>sum+saleProfit(s),0) };
   });
 }
 

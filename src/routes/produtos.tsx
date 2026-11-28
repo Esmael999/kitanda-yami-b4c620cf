@@ -14,18 +14,19 @@ import {
 } from "@/components/ui/drawer";
 import { Card, EmptyState, Field, MoneyInput, NumberInput, PageHeader } from "@/components/app/ui";
 import { updateLedger, useCloud, useLedger } from "@/lib/store";
-import { formatKz, isLowStock, LedgerError, newId, validateProduct, type Product } from "@/lib/ledger";
+import { ProfitNotice, ProfitValue } from "@/components/app/profit";
+import { unitProfit, formatKz, isLowStock, LedgerError, newId, validateProduct, type Product } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { PhotoPicker, PhotoThumb } from "@/components/app/device-photo";
 import { useDetail, writeDetail } from "@/lib/device-details";
 import { can } from "@/lib/cloud-map";
 
-type Search = { filtro?: "baixo" };
+type Search = { filtro?: "baixo" | "prejuizo" };
 
 export const Route = createFileRoute("/produtos")({
   validateSearch: (s: Record<string, unknown>): Search =>
-    s["filtro"] === "baixo" ? { filtro: "baixo" } : {},
+    s["filtro"] === "baixo" ? { filtro: "baixo" } : s["filtro"]==="prejuizo"?{filtro:"prejuizo"}:{},
   head: () => ({
     meta: [
       { title: "Produtos e stock — Kitanda Yami" },
@@ -50,11 +51,12 @@ function Products() {
   const [creating, setCreating] = useState(false);
 
   const list = state.products
-    .filter((p) => (filtro === "baixo" ? isLowStock(p) : true))
+    .filter((p) => filtro === "baixo" ? isLowStock(p) : filtro==="prejuizo"?unitProfit(p)<0:true)
     .filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()))
     .sort((a, b) => Number(isLowStock(b)) - Number(isLowStock(a)) || a.name.localeCompare(b.name));
   const stockValue = state.products.reduce((s, p) => s + p.stock * p.cost, 0);
   const lowCount = state.products.filter(isLowStock).length;
+  const lossCount=state.products.filter(p=>unitProfit(p)<0).length;
 
   return (
     <div>
@@ -78,7 +80,7 @@ function Products() {
             className="h-12 rounded-xl pl-10 text-base"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             to="/produtos"
             search={{}}
@@ -99,6 +101,7 @@ function Products() {
           >
             Stock baixo ({lowCount})
           </Link>
+          <Link to="/produtos" search={{filtro:"prejuizo"}} className={cn("rounded-full px-4 py-1.5 text-sm font-medium",filtro==="prejuizo"?"bg-destructive text-destructive-foreground":"bg-destructive/10 text-destructive")}>Prejuízo ({lossCount})</Link>
         </div>
       </div>
 
@@ -121,12 +124,12 @@ function Products() {
             const low = isLowStock(p);
             return (
               <button key={p.id} onClick={() => setEditing(p)} className="block w-full text-left">
-                <Card className="flex items-center gap-3 py-3">
+                <Card className={cn("flex items-center gap-3 py-3",unitProfit(p)<0&&"border-destructive/40")}>
                   <ProductThumb id={p.id} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{p.name}</p>
                     <p className="text-sm text-muted-foreground tabular">
-                      {formatKz(p.price)} · lucro {formatKz(p.price - p.cost)}
+                      {formatKz(p.price)} · <ProfitValue value={unitProfit(p)} unit/>
                     </p>
                   </div>
                   <span
@@ -198,7 +201,8 @@ function ProductDrawer({
           ? s.products.map((p) => (p.id === product.id ? { ...data, id: p.id } : p))
           : [...s.products, { ...data, id }],
       }));
-      toast.success(product ? "Produto actualizado" : "Produto adicionado");
+      if(unitProfit(data)<0)toast.warning("Produto guardado com preço abaixo do custo.");
+      else toast.success(product ? "Produto actualizado" : "Produto adicionado");
       onClose();
     } catch (e) {
       toast.error(e instanceof LedgerError ? e.message : "Não foi possível guardar.");
@@ -239,11 +243,7 @@ function ProductDrawer({
               <MoneyInput id="p-cost" value={form.cost} onChange={(v) => set("cost", v)} />
             </Field>
           </div>
-          {form.price > 0 && (
-            <p className={cn("text-sm", form.price - form.cost >= 0 ? "text-primary" : "text-destructive")}>
-              Lucro por unidade: {formatKz(form.price - form.cost)}
-            </p>
-          )}
+          {form.price > 0 && <ProfitNotice value={unitProfit(form)} unit/>}
           <div className="grid grid-cols-2 gap-3">
             <Field label={product ? "Stock actual" : "Stock inicial"} htmlFor="p-stock">
               <NumberInput id="p-stock" value={form.stock} onChange={(v) => set("stock", v)} />

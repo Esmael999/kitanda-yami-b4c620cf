@@ -2,9 +2,10 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Eyebrow, PageHeader } from "@/components/app/ui";
 import { useCloud, useLedger } from "@/lib/store";
+import { ProfitValue, LossNotice } from "@/components/app/profit";
 import { can } from "@/lib/cloud-map";
 import { filterReport, type SaleStatus } from "@/lib/report-filter";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ReferenceLine } from "recharts";
 import { addDays, formatKz, periodStats, salesByDay, startOfDay, topProducts } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -117,8 +118,8 @@ function Reports() {
 
         <div className="grid grid-cols-2 gap-3">
           <Card>
-            <p className="text-xs text-muted-foreground">{t("report.profit")}</p>
-            <p className="text-lg font-bold text-primary tabular">{formatKz(stats.profit)}</p>
+            <p className="text-xs text-muted-foreground">Resultado bruto</p>
+            <ProfitValue value={stats.profit} className="text-lg"/>
             <p className="text-xs text-muted-foreground">margem {margin}%</p>
           </Card>
           <Card>
@@ -128,6 +129,13 @@ function Reports() {
           </Card>
         </div>
 
+        {stats.lossCount>0&&<LossNotice><strong>{stats.lossCount} {stats.lossCount===1?"venda com prejuízo":"vendas com prejuízo"}</strong><p>Perdas nessas vendas: {formatKz(stats.lossTotal)}. Resultado do período: {formatKz(stats.profit)}.</p></LossNotice>}
+        <Card>
+          <p className="mb-1 font-semibold">Lucros e prejuízos por dia</p>
+          <p className="mb-3 text-xs text-muted-foreground">Receitas menos o custo dos produtos vendidos.</p>
+          <div className="h-44 min-w-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={chart.map(c=>({date:c.date.toLocaleDateString("pt-AO",{day:"2-digit",month:"2-digit"}),profit:c.profit}))}><XAxis dataKey="date" tick={{fontSize:10,fill:"var(--muted-foreground)"}}/><YAxis width={48} tick={{fontSize:10,fill:"var(--muted-foreground)"}}/><ReferenceLine y={0} stroke="var(--muted-foreground)"/><Tooltip formatter={(v:number)=>formatKz(v)} contentStyle={{background:"var(--card)",color:"var(--foreground)",borderColor:"var(--border)"}}/><Bar dataKey="profit" name="Resultado bruto">{chart.map(c=><Cell key={c.date.toISOString()} fill={c.profit<0?"var(--destructive)":c.profit>0?"var(--primary)":"var(--muted-foreground)"}/>)}</Bar></BarChart></ResponsiveContainer></div>
+          <p className="text-xs text-muted-foreground"><span className="text-primary font-semibold">Verde: lucro</span> · <span className="text-destructive font-semibold">Vermelho: prejuízo</span></p>
+        </Card>
         <Card>
           <p className="mb-3 font-semibold">{t("report.daily")}</p>
           <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">

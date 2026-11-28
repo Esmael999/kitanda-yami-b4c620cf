@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/drawer";
 import { EmptyState, Field, MoneyInput, PageHeader, whatsappLink } from "@/components/app/ui";
 import { updateLedger, useCloud, useLedger } from "@/lib/store";
-import { cartTotal, formatKz, LedgerError, newId, receiptText, recordSale, type ReceiptInfo } from "@/lib/ledger";
+import { LossNotice, ProfitNotice } from "@/components/app/profit";
+import { cartProfit, unitProfit, saleProfit, cartTotal, formatKz, LedgerError, newId, receiptText, recordSale, type ReceiptInfo } from "@/lib/ledger";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { PAYMENT_METHODS, recordedMethod, type PaymentMethod } from "@/lib/payment-method";
@@ -55,6 +56,8 @@ function Sell() {
     .filter((l): l is { product: NonNullable<typeof l.product>; qty: number } => !!l.product && l.qty > 0);
   const total = cartTotal(lines.map((l) => ({ qty: l.qty, price: l.product.price })));
   const units = lines.reduce((s, l) => s + l.qty, 0);
+  const result=cartProfit(lines.map(l=>({...l.product,qty:l.qty})));
+  const hasLossItem=lines.some(l=>unitProfit(l.product)<0);
 
   const change = (id: string, delta: number, max: number) =>
     setCart((c) => {
@@ -102,6 +105,7 @@ function Sell() {
                 className={cn(
                   "relative rounded-3xl border bg-card p-3 transition-colors",
                   qty > 0 && "border-primary bg-accent",
+                  unitProfit(p)<0 && "border-destructive/50",
                   out && "opacity-50",
                 )}
               >
@@ -112,7 +116,8 @@ function Sell() {
                 >
                   <SaleProductPhoto id={p.id} />
                   <p className="line-clamp-2 min-h-10 text-sm font-semibold leading-tight">{p.name}</p>
-                  <p className="mt-1 font-bold text-primary tabular">{formatKz(p.price)}</p>
+                  <p className={cn("mt-1 font-bold tabular",unitProfit(p)<0?"text-destructive":"text-primary")}>{formatKz(p.price)}</p>
+                  {unitProfit(p)<0&&<p className="text-xs text-destructive">Abaixo do custo</p>}
                   <p className="text-xs text-muted-foreground">{out ? "Esgotado" : `${p.stock} em stock`}</p>
                 </button>
                 {qty > 0 && (
@@ -144,10 +149,11 @@ function Sell() {
         <div className="fixed inset-x-0 bottom-24 z-30 mx-auto max-w-md px-5 animate-pop">
           <button
             onClick={() => setCheckout(true)}
-            className="flex w-full items-center justify-between rounded-2xl bg-gradient-primary px-5 py-4 text-primary-foreground shadow-glow"
+            className={cn("flex w-full items-center justify-between gap-2 rounded-2xl px-5 py-4",result<0?"bg-destructive text-destructive-foreground":"bg-gradient-primary text-primary-foreground shadow-glow")}
           >
             <span className="text-sm font-semibold">
               {units} {units === 1 ? "item" : "itens"} · Concluir
+              {hasLossItem&&<span className="block text-xs">{result<0?"Venda com prejuízo":"Contém produtos abaixo do custo"}</span>}
             </span>
             <span className="text-lg font-extrabold tabular">{formatKz(total)}</span>
           </button>
@@ -201,6 +207,9 @@ function CheckoutDrawer({
   const [upfront, setUpfront] = useState(0);
   const [receipt, setReceipt] = useState<{ info: ReceiptInfo; phone: string } | null>(null);
 
+  const pricedLines=lines.map(l=>({ ...l,cost:state.products.find(p=>p.id===l.productId)?.cost??0 }));
+  const projectedProfit=cartProfit(pricedLines);
+  const lossLines=pricedLines.filter(l=>unitProfit(l)<0);
   const confirm = async () => {
     if (saving) return;
     const selected = recordedMethod(method, mode === "pronto" ? total : upfront);
@@ -208,6 +217,7 @@ function CheckoutDrawer({
     try {
       let cid = customerId;
       let saleId = "";
+      let recordedProfit=0;
       updateLedger((s) => {
         let next = s;
         if (addingCustomer && newName.trim()) {
@@ -224,6 +234,7 @@ function CheckoutDrawer({
           upfront: mode === "fiado" ? upfront : undefined,
         });
         saleId = updated.sales[0]?.id ?? "";
+        recordedProfit=updated.sales[0]?saleProfit(updated.sales[0]):0;
         return updated;
       });
       if (selected && userId && saleId) {
@@ -231,6 +242,7 @@ function CheckoutDrawer({
         catch { toast.warning("Venda registada, mas não foi possível guardar o método neste dispositivo."); }
       }
       toast.success(mode === "fiado" ? `Venda fiada de ${formatKz(total - upfront)} registada` : `Venda de ${formatKz(total)} registada`);
+      if(recordedProfit<0)toast.warning("Venda registada com prejuízo de "+formatKz(-recordedProfit));
       const cust = cid ? state.customers.find((c) => c.id === cid) : null;
       setReceipt({
         phone: cust?.phone ?? "",
@@ -289,6 +301,8 @@ function CheckoutDrawer({
         </DrawerHeader>
 
         <div className="space-y-4 overflow-y-auto px-4">
+          <ProfitNotice value={projectedProfit}/>
+          {lossLines.length>0&&projectedProfit>=0&&<LossNotice>Produtos abaixo do custo: {lossLines.map(l=>l.name).join(", ")}.</LossNotice>}
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
             {(["pronto", "fiado"] as const).map((m) => (
               <button
@@ -371,8 +385,8 @@ function CheckoutDrawer({
         </div>
 
         <DrawerFooter>
-          <Button variant={mode === "fiado" ? "debt" : "hero"} size="xl" disabled={saving} onClick={() => void confirm()}>
-            <Check /> {mode === "fiado" ? "Registar fiado" : "Confirmar venda"}
+          <Button variant={projectedProfit<0?"destructive":mode === "fiado" ? "debt" : "hero"} size="xl" disabled={saving} onClick={() => void confirm()}>
+            <Check /> {projectedProfit<0?"Confirmar com prejuízo":mode === "fiado" ? "Registar fiado" : "Confirmar venda"}
           </Button>
         </DrawerFooter>
       </DrawerContent>

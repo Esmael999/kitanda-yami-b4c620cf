@@ -5,6 +5,7 @@ import { Card, Eyebrow } from "@/components/app/ui";
 import { Logo } from "@/components/app/shell";
 import comerciante from "@/assets/comerciante.png";
 import { useCloud, useLedger, updateLedger } from "@/lib/store";
+import { ProfitValue, LossNotice } from "@/components/app/profit";
 import { useT } from "@/lib/i18n";
 import { useDetail } from "@/lib/device-details";
 import { paymentLabel } from "@/lib/payment-method";
@@ -18,6 +19,8 @@ import {
   formatTime,
   isLowStock,
   periodStats,
+  unitProfit,
+  saleProfit,
   startOfDay,
 } from "@/lib/ledger";
 
@@ -58,6 +61,7 @@ function Home() {
   const owed = debtors(state);
   const totalOwed = owed.reduce((s, d) => s + d.debt, 0);
   const low = state.products.filter(isLowStock);
+  const belowCost=state.products.filter(p=>unitProfit(p)<0);
   const recent = state.sales.slice(0, 5);
   const custName = (id: string | null) => state.customers.find((c) => c.id === id)?.name;
   const diff = stats.total - yesterday.total;
@@ -128,13 +132,15 @@ function Home() {
             <p className="text-xs text-foreground/80">{t("home.receivedToday")}</p>
             <p className="font-bold tabular">{formatKz(stats.received)}</p>
           </div>
-          <div className="rounded-2xl bg-background/25 p-3">
-            <p className="text-xs text-foreground/80">{t("home.profitToday")}</p>
-            <p className="font-bold tabular">{formatKz(stats.profit)}</p>
+          <div className="rounded-2xl bg-card p-3 text-card-foreground">
+            <p className="text-xs text-muted-foreground">Resultado bruto de hoje</p>
+            <ProfitValue value={stats.profit}/>
           </div>
         </div>
       </section>
 
+      {stats.profit<0&&<LossNotice>O negócio regista prejuízo bruto de {formatKz(-stats.profit)} hoje.</LossNotice>}
+      {belowCost.length>0&&<Link to="/produtos" search={{filtro:"prejuizo"}} className="block"><LossNotice><strong>{belowCost.length} {belowCost.length===1?"produto abaixo do custo":"produtos abaixo do custo"}</strong><p className="mt-1">Reveja os preços de venda.</p></LossNotice></Link>}
       <div className="grid grid-cols-2 gap-3">
         <Button asChild variant="hero" size="xl">
           <Link to="/vender">
@@ -214,6 +220,7 @@ function Home() {
                     <p className={fiado ? "text-xs text-debt" : "text-xs text-primary"}>
                       {fiado ? "Kilapé" : "Pago"}
                     </p>
+                    {saleProfit(s)<0&&<p className="text-xs"><ProfitValue value={saleProfit(s)}/></p>}
                     <PaymentNote id={s.id} />
                   </div>
                 </div>
