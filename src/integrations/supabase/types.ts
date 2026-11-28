@@ -114,6 +114,7 @@ export type Database = {
           email: string
           establishment_id: string
           id: string
+          job_title: string
           name: string
           permissions: Json
           role: Database["public"]["Enums"]["member_role"]
@@ -126,6 +127,7 @@ export type Database = {
           email: string
           establishment_id: string
           id?: string
+          job_title?: string
           name?: string
           permissions?: Json
           role?: Database["public"]["Enums"]["member_role"]
@@ -138,6 +140,7 @@ export type Database = {
           email?: string
           establishment_id?: string
           id?: string
+          job_title?: string
           name?: string
           permissions?: Json
           role?: Database["public"]["Enums"]["member_role"]
@@ -488,16 +491,28 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_team_invite: {
+        Args: {
+          _contact: string
+          _job_title: string
+          _kind: string
+          _name: string
+          _permissions: Json
+        }
+        Returns: Json
+      }
       current_establishment_id: { Args: never; Returns: string }
       delete_customer: { Args: { _id: string }; Returns: undefined }
       delete_product: { Args: { _id: string }; Returns: undefined }
       has_permission: { Args: { _perm: string }; Returns: boolean }
       import_ledger: { Args: { _data: Json }; Returns: Json }
+      inspect_team_invite: { Args: { _token: string }; Returns: Json }
       invite_employee: {
         Args: { _email: string; _name: string; _permissions: Json }
         Returns: undefined
       }
       is_owner: { Args: never; Returns: boolean }
+      list_team_invites: { Args: never; Returns: Json }
       record_payment: {
         Args: {
           _amount: number
@@ -530,6 +545,10 @@ export type Database = {
           _price: number
         }
         Returns: undefined
+      }
+      team_activity: {
+        Args: { _days?: number; _employee_id: string }
+        Returns: Json
       }
       update_employee: {
         Args: { _active: boolean; _id: string; _permissions: Json }
