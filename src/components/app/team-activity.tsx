@@ -6,7 +6,7 @@ import { formatKz } from "@/lib/ledger";
 import { getTeamActivity, type Activity } from "@/lib/team-invite";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 
-export function TeamActivity({ helper, onClose }: { helper:{id:string;name:string;job_title?:string}; onClose:()=>void }) {
+export function TeamActivity({ helper, onClose }: { helper:{id:string;name:string;job_title?:string;user_id?:string|null}; onClose:()=>void }) {
   const [days,setDays]=useState<1|7|30>(7);
   const [revision,setRevision]=useState(0);
   const [data,setData]=useState<Activity|null>(null);
@@ -26,6 +26,7 @@ export function TeamActivity({ helper, onClose }: { helper:{id:string;name:strin
         <DrawerDescription>{helper.job_title || "Ajudante"} · Operações sincronizadas com a loja</DrawerDescription>
       </DrawerHeader>
       <div className="min-h-0 space-y-3 overflow-y-auto px-5 pb-2">
+        {helper.user_id===null&&<Card className="text-sm">À espera de adesão. As actividades aparecem quando o ajudante começar a trabalhar.</Card>}
         <div role="group" aria-label="Período" className="grid grid-cols-3 gap-2 rounded-2xl bg-secondary p-1">
           {([1,7,30] as const).map(d=><Button key={d} type="button" variant={days===d?"hero":"ghost"} aria-pressed={days===d} className="min-h-11" onClick={()=>setDays(d)}>{d===1?"24 horas":d+" dias"}</Button>)}
         </div>
