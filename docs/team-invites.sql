@@ -1,5 +1,5 @@
--- Proposed migration: review and test on an isolated database before production.
--- Do not apply until email/SMS verification is enabled and the matching frontend is ready.
+-- Token-authorized helper enrollment. Email/phone are login identifiers, not verified contacts.
+-- Test transactionally before committing; preserve existing linked employees.
 begin;
 create schema if not exists kitanda_private;
 revoke all on schema kitanda_private from public, anon, authenticated;
@@ -29,19 +29,21 @@ declare
   token text := replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-','');
   expiry timestamptz := now() + interval '7 days';
   perms jsonb;
+  login_email text;
 begin
   if auth.uid() is null or est is null or not public.is_owner() then raise exception 'Sem permissão.' using errcode='42501'; end if;
   if _kind is null or _kind not in ('email','phone') or
      (_kind='email' and (contact_value !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$' or length(contact_value)>254)) or
      (_kind='phone' and contact_value !~ '^[+]2449[0-9]{8}$') then raise exception 'Contacto inválido.'; end if;
+  if _kind='email' and contact_value like '%@phone.kitanda.invalid' then raise exception 'Escolha telefone.'; end if;
+  login_email:=case when _kind='phone' then 'p'||ltrim(contact_value,'+')||'@phone.kitanda.invalid' else contact_value end;
   if length(btrim(coalesce(_name,''))) not between 1 and 100 then raise exception 'Nome inválido.'; end if;
   if length(btrim(coalesce(_job_title,''))) not between 1 and 80 then raise exception 'Função inválida.'; end if;
   if jsonb_typeof(coalesce(_permissions,'{}'::jsonb)) <> 'object' then raise exception 'Permissões inválidas.'; end if;
   select jsonb_object_agg(k, coalesce((_permissions->k) = 'true'::jsonb,false)) into perms
     from unnest(array['vender','fiado','receber','produtos','relatorios']) k;
-  if exists(select 1 from public.employees e where e.establishment_id=est and lower(e.email)=contact_value) then
-    raise exception 'Já existe uma associação ou convite anterior para este contacto.';
-  end if;
+  if exists(select 1 from auth.users u where lower(u.email)=login_email) then raise exception 'Já existe uma conta com este contacto.'; end if;
+  if exists(select 1 from public.employees e where e.establishment_id=est and lower(e.email)=login_email and (e.user_id is not null or e.role<>'employee' or not e.active)) then raise exception 'A conta já pertence à equipa ou está bloqueada.'; end if;
   insert into kitanda_private.team_invites(establishment_id,contact,kind,name,job_title,permissions,token_hash,expires_at)
   values(est,contact_value,_kind,btrim(_name),btrim(_job_title),perms,sha256(convert_to(token,'UTF8')),expiry)
   on conflict(establishment_id,contact) do update set kind=excluded.kind,name=excluded.name,job_title=excluded.job_title,permissions=excluded.permissions,
@@ -67,66 +69,49 @@ returns jsonb language sql stable security definer set search_path='' as $$
   where length(_token)=64 and i.token_hash=sha256(convert_to(_token,'UTF8')) and i.used_at is null and i.expires_at>now()
 $$;
 
--- The signup trigger preserves legacy email invitations and normal shop creation.
--- New token-based signups remain without membership until verified and redeemed.
+-- Every new membership derives from a server-validated invitation; no automatic claim by contact.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path='' as $$
 declare
-  _est uuid;
-  _inv public.employees%rowtype;
-  _name text := coalesce(nullif(trim(new.raw_user_meta_data ->> 'full_name'), ''), '');
-  _type text := coalesce(new.raw_user_meta_data ->> 'business_type', 'cantina');
-  _token text := new.raw_user_meta_data ->> 'team_invitation';
+  est uuid;
+  inv kitanda_private.team_invites%rowtype;
+  person_name text := coalesce(nullif(btrim(new.raw_user_meta_data->>'full_name'),''),'');
+  business_type text := coalesce(new.raw_user_meta_data->>'business_type','cantina');
+  token text := new.raw_user_meta_data->>'team_invitation';
+  identifier text := lower(coalesce(new.email,new.phone,new.id::text));
+  expected_email text;
 begin
-  if _token is not null then
-    if length(_token)<>64 or not exists (
-      select 1 from kitanda_private.team_invites i
-      where i.token_hash=sha256(convert_to(_token,'UTF8')) and i.used_at is null and i.expires_at>now()
-        and ((i.kind='email' and i.contact=lower(new.email)) or
-             (i.kind='phone' and ltrim(i.contact,'+')=ltrim(new.phone,'+')))
-    ) then raise exception 'Convite inválido ou expirado.'; end if;
-    return new;
-  end if;
-  if _type not in ('zunga','bancada','cantina','miniloja','deposito','comida') then _type := 'cantina'; end if;
-  select * into _inv from public.employees where lower(email)=lower(new.email) and user_id is null and active order by created_at limit 1 for update;
-  if found then
-    update public.employees set user_id=new.id,name=case when name='' then _name else name end where id=_inv.id;
-    _est:=_inv.establishment_id;
+  if token is not null then
+    if token !~ '^[a-f0-9]{64}$' then raise exception 'Convite inválido.'; end if;
+    select * into inv from kitanda_private.team_invites
+      where token_hash=sha256(convert_to(token,'UTF8')) for update;
+    if not found or inv.used_at is not null or inv.expires_at<=now() then raise exception 'Convite inválido ou expirado.'; end if;
+    expected_email:=case when inv.kind='phone' then 'p'||ltrim(inv.contact,'+')||'@phone.kitanda.invalid' else inv.contact end;
+    if identifier<>expected_email then raise exception 'Contacto diferente do convite.'; end if;
+    if not exists(select 1 from public.employees e where e.establishment_id=inv.establishment_id and e.role='owner' and e.active) then raise exception 'Loja indisponível.'; end if;
+    est:=inv.establishment_id;
+    person_name:=inv.name;
+    insert into public.employees(establishment_id,user_id,email,name,role,job_title,permissions,active)
+      values(est,new.id,identifier,person_name,'employee',inv.job_title,inv.permissions,true)
+      on conflict(establishment_id,email) do update set user_id=excluded.user_id,name=excluded.name,job_title=excluded.job_title,permissions=excluded.permissions
+      where employees.user_id is null and employees.role='employee' and employees.active;
+    if not found then raise exception 'Ajudante já associado ou bloqueado.'; end if;
+    update kitanda_private.team_invites set used_at=now(),used_by=new.id where id=inv.id;
   else
+    if business_type not in ('zunga','bancada','cantina','miniloja','deposito','comida') then business_type:='cantina'; end if;
     insert into public.establishments(name,business_type)
-    values(coalesce(nullif(trim(new.raw_user_meta_data ->> 'business_name'),''),'A minha cantina'),_type) returning id into _est;
+      values(coalesce(nullif(btrim(new.raw_user_meta_data->>'business_name'),''),'A minha cantina'),business_type) returning id into est;
     insert into public.employees(establishment_id,user_id,email,name,role)
-    values(_est,new.id,lower(coalesce(new.email,new.phone,new.id::text)),_name,'owner');
+      values(est,new.id,identifier,person_name,'owner');
   end if;
-  insert into public.profiles(id,establishment_id,full_name) values(new.id,_est,_name) on conflict(id) do nothing;
+  insert into public.profiles(id,establishment_id,full_name) values(new.id,est,person_name) on conflict(id) do nothing;
   return new;
 end $$;
-
-create or replace function public.redeem_team_invite(_token text)
-returns void language plpgsql security definer set search_path='' as $$
-declare inv kitanda_private.team_invites%rowtype; u auth.users%rowtype;
-begin
-  if auth.uid() is null or length(coalesce(_token,''))<>64 then raise exception 'Convite inválido.' using errcode='42501'; end if;
-  -- Serialize claims for the same account and token.
-  perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text,0));
-  select * into inv from kitanda_private.team_invites where token_hash=sha256(convert_to(_token,'UTF8')) for update;
-  if not found or inv.used_at is not null or inv.expires_at<=now() then raise exception 'Convite utilizado ou expirado.'; end if;
-  select * into u from auth.users where id=auth.uid();
-  if not found or not coalesce(
-    (inv.kind='email' and lower(u.email)=inv.contact and u.email_confirmed_at is not null) or
-    (inv.kind='phone' and ltrim(u.phone,'+')=ltrim(inv.contact,'+') and u.phone_confirmed_at is not null),false)
-  then raise exception 'Confirme o contacto indicado no convite.' using errcode='42501'; end if;
-  if exists(select 1 from public.employees where user_id=u.id) then raise exception 'Esta conta já pertence a um negócio.'; end if;
-  insert into public.employees(establishment_id,user_id,email,name,role,job_title,permissions,active)
-  values(inv.establishment_id,u.id,inv.contact,inv.name,'employee',inv.job_title,inv.permissions,true);
-  insert into public.profiles(id,establishment_id,full_name) values(u.id,inv.establishment_id,inv.name)
-    on conflict(id) do update set establishment_id=excluded.establishment_id,full_name=excluded.full_name;
-  update kitanda_private.team_invites set used_at=now(),used_by=u.id where id=inv.id;
-end $$;
-
-revoke all on function public.create_team_invite(text,text,text,jsonb,text), public.list_team_invites(), public.redeem_team_invite(text), public.inspect_team_invite(text) from public,anon,authenticated;
-grant execute on function public.create_team_invite(text,text,text,jsonb,text), public.list_team_invites(), public.redeem_team_invite(text) to authenticated;
+revoke all on function public.create_team_invite(text,text,text,jsonb,text), public.list_team_invites(), public.inspect_team_invite(text) from public,anon,authenticated;
+grant execute on function public.create_team_invite(text,text,text,jsonb,text), public.list_team_invites() to authenticated;
 grant execute on function public.inspect_team_invite(text) to anon,authenticated;
+-- The legacy contact-only invitation must no longer be callable.
+revoke execute on function public.invite_employee(text,text,jsonb) from public,anon,authenticated;
 -- Read-only activity API. Attribution uses server-authenticated actor IDs in existing ledger rows.
 create or replace function public.team_activity(_employee_id uuid, _days integer default 7)
 returns jsonb language plpgsql stable security invoker set search_path='' as $activity$
@@ -155,4 +140,5 @@ begin
 end $activity$;
 revoke all on function public.team_activity(uuid,integer) from public,anon,authenticated;
 grant execute on function public.team_activity(uuid,integer) to authenticated;
+notify pgrst, 'reload schema';
 commit;
